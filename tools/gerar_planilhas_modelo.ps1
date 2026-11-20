@@ -175,7 +175,7 @@ function GridSheet([string[]]$headers, $data, [int[]]$widths, $styles = @{}) {
 $LEIA = @(
   @('Aba', 'O que preencher', 'Quem mantém'),
   @('Impostos', 'Alíquotas de PIS, COFINS, INSS, ISSQN e o OPEX (overhead aplicado ao custo). Valores iniciais são os padrões do app: confirme com o Financeiro.', 'Operations / Business Manager'),
-  @('Perfis', 'OBRIGATÓRIO antes do primeiro uso. Uma linha por iStudio + Perfil + Senioridade, com custo/hora e ratecard (R$/h) por ano. O app usa esta aba para listar iStudios, papéis e senioridades e para sugerir custo e ratecard.', 'Operations / Business Manager'),
+  @('Perfis', 'OPCIONAL: só é usada se não houver a planilha DRP na pasta Financeiro. Innovation Studios, perfis, custos e ratecards vêm do DRP (aba Custo Referência), fornecido pela gestão.', 'Operations / Business Manager'),
   @('Dias Uteis', "Dias e horas úteis de cada mês ($AnoDiasUteis, feriados nacionais). Ajuste feriados locais.", 'Operations Manager'),
   @('Revenue State', 'Status usados em "Chance de conversão" do contrato e em "Status da receita" da alocação.', 'Operations Manager'),
   @('Status da Proposta', 'Lista de status de proposta (opcional).', 'Operations Manager'),
@@ -185,7 +185,7 @@ $LEIA = @(
   @('BP por Cliente', 'Business Partner responsável por cada cliente.', 'Business Manager')
 )
 $r = @{}; Add $r 1 1 'Config · Gestão Financeira de Projetos' $S_TITLE
-Add $r 2 1 'Fonte única de regras do app: impostos, perfis e ratecards, dias úteis e listas. Comece pela aba Perfis.' $S_NOTE
+Add $r 2 1 'Regras do app: impostos, dias úteis e listas. Innovation Studios, perfis, custos e ratecards vêm da planilha DRP (da gestão), que deve ficar na mesma pasta Financeiro.' $S_NOTE
 $i = 4; foreach ($row in $LEIA) { $st = if ($i -eq 4) { $S_HEAD } else { $S_BOX }; for ($j = 0; $j -lt 3; $j++) { Add $r $i ($j + 1) $row[$j] $st }; $i++ }
 $leiaSheet = SheetXml $r "A1:C$($i - 1)" (ColsXml @(22, 90, 30))
 

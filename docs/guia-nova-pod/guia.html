@@ -118,12 +118,13 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
   <span class="bigarrow"></span>
   <div class="band">
     <div class="tags">
-      <span class="tag">App em HTML</span><span class="tag">Database.xlsx</span><span class="tag">Config.xlsx</span><span class="tag">Chrome ou Edge</span><span class="tag">OneDrive / SharePoint</span>
+      <span class="tag">App em HTML</span><span class="tag">Database.xlsx</span><span class="tag">Config.xlsx</span><span class="tag">DRP da gestão</span><span class="tag">Chrome ou Edge</span><span class="tag">OneDrive / SharePoint</span>
     </div>
     <div class="meta">
       <b>PARA</b><span>Novas PODs: Operations, Business e Delivery Managers e Delivery Leaders</span>
-      <b>VERSÃO</b><span>1.0 · novembro de 2026</span>
+      <b>VERSÃO</b><span>1.1 · novembro de 2026</span>
       <b>PACOTE</b><span>Gestao_Financeira_Projetos.html · Financeiro/Database.xlsx · Financeiro/Config.xlsx</span>
+      <b>DA GESTÃO</b><span>Planilha DRP (ex.: DRP AIR BR V20260925.xlsx), sempre na versão mais atual</span>
     </div>
     <span class="int" style="right:6mm;bottom:6mm">Internal</span>
   </div>
@@ -132,19 +133,20 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
 <!-- ============ 1. VISÃO GERAL ============ -->
 <section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
   <div class="shead"><span class="lbl">01 / Visão geral</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
-  <h2>Um app no navegador, duas planilhas como base e nenhum servidor</h2>
-  <p class="lead">O app lê e grava direto no Database.xlsx e no Config.xlsx da pasta Financeiro sincronizada pelo OneDrive. Tudo roda no seu navegador: nenhum dado financeiro sai da máquina.</p>
-  <div class="cards c3">
-    <div class="card g050"><span class="t">Gestao_Financeira_Projetos.html</span><p>O app. Um único arquivo, sem instalação. Abra no Chrome ou no Edge para computador.</p></div>
+  <h2>Um app no navegador, três planilhas como base e nenhum servidor</h2>
+  <p class="lead">O app grava direto no Database.xlsx e no Config.xlsx e lê o DRP da gestão, todos na pasta Financeiro sincronizada pelo OneDrive. Tudo roda no seu navegador: nenhum dado financeiro sai da máquina.</p>
+  <div class="cards c4">
+    <div class="card g050"><span class="t">App HTML</span><p>Um único arquivo, sem instalação. Abra no Chrome ou no Edge para computador.</p></div>
     <div class="card g150"><span class="t">Database.xlsx</span><p>Os dados: contratos (aba <b>2. Propostas</b>) e o billing de cada cliente (abas <b>BL_</b>). Começa vazio.</p></div>
-    <div class="card g300"><span class="t">Config.xlsx</span><p>As regras: impostos, perfis e ratecards, dias úteis e listas. É a fonte única de regras do app.</p></div>
+    <div class="card g300"><span class="t">Config.xlsx</span><p>As regras: impostos, dias úteis e listas dos formulários.</p></div>
+    <div class="card g600"><span class="t">DRP</span><p>Da gestão. Innovation Studios, perfis, custos e ratecards por ano (aba <b>Custo Referência</b>). Só leitura.</p></div>
   </div>
   <h3>O que o app faz</h3>
   <table>
     <tr><th style="width:28%">Área</th><th>Para que serve</th></tr>
     <tr><td class="k">Dashboard</td><td>4 visões prontas (executiva, rentabilidade, time e horas, contratos), filtros por período e dimensão e pontos de atenção automáticos. O layout pode ser personalizado.</td></tr>
     <tr><td class="k">Projetos</td><td>Cria clientes, projetos e contratos. Cada cliente novo ganha a sua aba de billing <code>BL_&lt;cliente&gt;</code>.</td></tr>
-    <tr><td class="k">Time e alocação</td><td>Alocação mensal por profissional, com ratecard e custo sugeridos pela aba Perfis do Config.</td></tr>
+    <tr><td class="k">Time e alocação</td><td>Alocação mensal por profissional, com ratecard e custo sugeridos pelo DRP conforme o ano do mês.</td></tr>
     <tr><td class="k">Ajuste de horas</td><td>Ajuste mensal das horas executadas, com o motivo gravado na coluna Obs.</td></tr>
     <tr><td class="k">Uso em equipe</td><td>Trava de edição (uma pessoa edita por vez), gravação automática, backups e detecção de alterações feitas por fora.</td></tr>
   </table>
@@ -161,25 +163,25 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
 <section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
   <div class="shead"><span class="lbl">02 / Preparar o ambiente</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
   <h2>Uma vez por POD: crie a pasta, configure as regras e distribua o app</h2>
-  <p class="lead">Feito por um Operations ou Business Manager antes de o time começar. Leva cerca de 30 minutos, a maior parte para preencher os Perfis.</p>
+  <p class="lead">Feito por um Operations ou Business Manager antes de o time começar. Leva cerca de 15 minutos.</p>
   <div class="steps">
     <div class="g050"><span class="y">01</span><p>Crie a pasta <b>Financeiro</b> no SharePoint da POD e copie para ela o Database.xlsx e o Config.xlsx do pacote.</p></div>
-    <div class="g150"><span class="y">02</span><p>Dê acesso de edição só a quem vai lançar dados. Os demais ficam com leitura.</p></div>
-    <div class="g300"><span class="y">03</span><p>Preencha o <b>Config.xlsx</b> no Excel (abas abaixo). Feche o arquivo ao terminar.</p></div>
+    <div class="g150"><span class="y">02</span><p>Salve na mesma pasta a <b>versão mais atual do DRP</b> fornecida pela gestão. Deixe só um DRP na pasta.</p></div>
+    <div class="g300"><span class="y">03</span><p>Revise o <b>Config.xlsx</b> no Excel (abas abaixo) e feche o arquivo. Dê edição só a quem lança dados.</p></div>
     <div class="g500"><span class="y">04</span><p>Publique o <b>HTML</b> num local fixo (ex.: a própria pasta Financeiro) para todos usarem a mesma versão.</p></div>
   </div>
-  <h3>O que preencher no Config.xlsx</h3>
+  <h3>O que revisar no Config.xlsx</h3>
   <table>
     <tr><th style="width:22%">Aba</th><th style="width:15%">Situação</th><th>O que fazer</th></tr>
-    <tr><td class="k">Perfis</td><td><b>Obrigatória</b></td><td>Uma linha por iStudio + Perfil + Senioridade, com <i>Custo Total</i> e <i>Ratecard</i> de 2026 e 2027. Sem ela, o app não lista iStudios e não é possível alocar profissionais.</td></tr>
     <tr><td class="k">Impostos</td><td>Confirmar</td><td>Vem com PIS 0,65% · COFINS 3% · INSS 2,7% · ISSQN 2% · OPEX 9,81%. Confirme com o Financeiro.</td></tr>
     <tr><td class="k">Dias Uteis</td><td>Revisar</td><td>Vem com os dias úteis de 2027 (feriados nacionais). Ajuste feriados locais.</td></tr>
     <tr><td class="k">PowerHouse</td><td>Recomendada</td><td>Lista de PowerHouses que aparece no cadastro de contratos.</td></tr>
     <tr><td class="k">BP por Cliente</td><td>Opcional</td><td>Business Partner de cada cliente.</td></tr>
     <tr><td class="k">Revenue State</td><td>Pronta</td><td>Status de contrato e de receita: CONFIRMADO, FECHADO, CHANCE ALTA, MÉDIA e BAIXA, PIPELINE, CANCELADO.</td></tr>
+    <tr><td class="k">Perfis</td><td>Não usar</td><td>Só vale se não houver DRP na pasta. Com o DRP, perfis, custos e ratecards vêm dele.</td></tr>
     <tr class="dark"><td class="k">Projetos · Clientes x Tabelas</td><td>Não editar</td><td>O app mantém estas abas sozinho a cada gravação.</td></tr>
   </table>
-  <div class="note"><span class="t">Exemplo de linha na aba Perfis</span><code>iStudio: Data &amp; AI · Perfil: Engenheiro de Dados · Senioridade: Pleno · Custo Total 2026: 95 · Ratecard 2026: 180 · Custo Total 2027 PC: 100 · Ratecard 2027: 190</code><br>Use exatamente os nomes de iStudio que o time vai escolher no app. Senioridades aceitas: Trainee, Júnior, Pleno, Sênior, Especialista.</div>
+  <div class="note"><span class="t">A planilha DRP</span>O nome precisa conter <b>DRP</b> e, de preferência, a versão no formato <code>Vaaaammdd</code> (ex.: <code>DRP AIR BR V20260925.xlsx</code>). O app só lê a aba <b>Custo Referência</b> e nunca grava no DRP. Não renomeie a aba nem as colunas.</div>
   <div class="note dark"><span class="t">Não renomeie nada</span>O app encontra abas, tabelas e colunas pelo nome. Não renomeie as abas <code style="background:#404040;color:#fff">1. Config</code>, <code style="background:#404040;color:#fff">2. Propostas</code> e <code style="background:#404040;color:#fff">BL_Template</code> nem os cabeçalhos das colunas.</div>
 </section>
 
@@ -195,6 +197,23 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
   </ol>
   <figure><img src="img/welcome.png" alt="Tela inicial do app"><figcaption>Tela inicial · Conectar a pasta Financeiro</figcaption></figure>
   <div class="note"><span class="t">O app cria na pasta</span><code>_safeharbor.lock</code> (trava de edição) · <code>_backups_safeharbor/</code> (backups) · <code>_safeharbor_config/</code> (cadastro compartilhado). Não apague nem edite esses itens à mão.</div>
+</section>
+
+<!-- ============ 3b. DRP ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">03 / Planilha DRP</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Toda vez que o app abre, ele confere o DRP e mostra a versão em uso</h2>
+  <p class="lead">O DRP é a fonte de Innovation Studios, perfis, custos e ratecards. Confira a versão no aviso e mantenha sempre a mais atual na pasta Financeiro.</p>
+  <figure><img src="img/drp.png" alt="Aviso da planilha DRP"><figcaption>Aviso ao abrir o app · arquivo, versão, data e conteúdo do DRP (dados fictícios)</figcaption></figure>
+  <table>
+    <tr><th style="width:34%">Aviso</th><th>O que fazer</th></tr>
+    <tr><td><b>Planilha DRP em uso</b></td><td>Confira se a versão é a mais recente enviada pela gestão e clique em <b>Entendi</b>. A versão também fica na barra lateral; clique nela para rever o aviso.</td></tr>
+    <tr><td><b>Planilha DRP não encontrada</b></td><td>Salve o DRP na pasta Financeiro. Sem ele, os formulários não listam iStudios nem sugerem custo e ratecard.</td></tr>
+    <tr><td><b>Há vários arquivos DRP</b></td><td>O app usa o de versão mais recente. Remova as versões antigas da pasta.</td></tr>
+    <tr><td><b>Versão com mais de 90 dias</b></td><td>Confirme com a gestão se existe uma versão mais nova.</td></tr>
+    <tr><td><b>DRP atualizado</b></td><td>Uma versão nova foi salva na pasta com o app aberto. O app já passou a usá-la.</td></tr>
+  </table>
+  <div class="note dark"><span class="t">Nova versão do DRP</span>Quando a gestão enviar uma versão nova, substitua o arquivo antigo na pasta Financeiro. Alocações já gravadas não mudam; os novos valores valem para os próximos lançamentos.</div>
 </section>
 
 <!-- ============ 4. PRIMEIRO PROJETO ============ -->
@@ -219,11 +238,11 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
   <h2>Uma linha por profissional por mês, com ratecard e custo sugeridos</h2>
   <ol>
     <li>Na página do projeto, clique em <b>+ Adicionar profissional</b>.</li>
-    <li>Escolha <b>iStudio → Papel → Senioridade</b>. O app busca na aba Perfis o ratecard (R$/h) e o custo/h, já com o OPEX, conforme o ano do mês de execução.</li>
+    <li>Escolha <b>iStudio → Papel → Senioridade</b>. O app busca no DRP o ratecard (R$/h) e o custo/h com overhead do ano do mês de execução. Se o DRP não cobre o ano, usa o mais próximo e avisa.</li>
     <li>Informe o <b>mês</b>, as <b>horas provisionadas</b> e as <b>horas executadas</b>. Use <i>Repetir até</i> para lançar vários meses de uma vez.</li>
     <li>Os valores sugeridos podem ser alterados à mão. Clique em <b>Salvar</b>.</li>
   </ol>
-  <figure><img src="img/alloc.png" alt="Formulário de alocação"><figcaption>Adicionar profissional · valores padrão vindos da aba Perfis do Config</figcaption></figure>
+  <figure><img src="img/alloc.png" alt="Formulário de alocação"><figcaption>Adicionar profissional · valores padrão vindos do DRP (dados fictícios)</figcaption></figure>
   <ul>
     <li><b>Replicar mês</b> copia todas as alocações de um mês para outro. Para meses futuros, deixe marcado "Horas executadas = horas provisionadas".</li>
     <li><b>Ajuste de horas</b> (menu lateral) corrige as horas executadas do mês, agrupadas por cliente › projeto › profissional. O motivo vai para a coluna Obs.</li>
@@ -266,7 +285,7 @@ Resultado       = valor líquido − custo
 Margem bruta    = resultado ÷ valor líquido</pre>
   <div class="cards c2">
     <div class="card g150"><span class="t">Tributação</span><p>Vem do campo <b>Funding</b> do contrato: Sim = isento. Projeto sem contrato é tributado. Contratos do mesmo projeto com Funding diferente geram o alerta "conflito".</p></div>
-    <div class="card g300"><span class="t">Fonte das regras</span><p>Impostos, perfis, dias úteis e listas vêm do <b>Config.xlsx</b>. A aba 1. Config do Database é só um espelho técnico que o app atualiza.</p></div>
+    <div class="card g300"><span class="t">Fonte das regras</span><p>Perfis, custos e ratecards vêm do <b>DRP</b>; impostos, dias úteis e listas, do <b>Config.xlsx</b>. A aba 1. Config do Database é só um espelho técnico.</p></div>
   </div>
   <h3>Faixas de margem bruta</h3>
   <table>
@@ -312,10 +331,10 @@ Margem bruta    = resultado ÷ valor líquido</pre>
   <table>
     <tr><th style="width:38%">Sintoma</th><th>Causa e solução</th></tr>
     <tr><td>Não aparece "Conectar pasta"</td><td>Navegador sem suporte. Use Chrome ou Edge para computador.</td></tr>
-    <tr><td>Lista de iStudio vazia ao alocar</td><td>A aba <b>Perfis</b> do Config está vazia. Preencha e recarregue o app.</td></tr>
+    <tr><td>Lista de iStudio vazia</td><td>O DRP não está na pasta ou não pôde ser lido (veja o aviso ao abrir). Salve a versão atual e reabra o app.</td></tr>
     <tr><td>"Database ou Config está bloqueado"</td><td>Arquivo aberto no Excel (seu ou de um colega). Feche e tente de novo.</td></tr>
     <tr><td>"Fulano está editando", mas ele já saiu</td><td>A trava expira em 3 minutos. Clique em <b>Atualizar</b> e depois em <b>Editar</b>.</td></tr>
-    <tr><td>Ratecard não é sugerido</td><td>O papel ou a senioridade não existem na aba Perfis para aquele iStudio. Cadastre ou informe à mão.</td></tr>
+    <tr><td>Ratecard não é sugerido</td><td>A combinação iStudio + papel + senioridade não existe no DRP. Informe à mão e avise a gestão.</td></tr>
     <tr><td>Preciso desfazer uma gravação</td><td>Com o app e o Excel fechados, copie o backup de <code>_backups_safeharbor/</code> por cima do arquivo. Depois de 3 dias, use o histórico de versões do SharePoint.</td></tr>
   </table>
 </section>
@@ -323,7 +342,7 @@ Margem bruta    = resultado ÷ valor líquido</pre>
 <!-- ============ 10. REFERÊNCIA ============ -->
 <section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
   <div class="shead"><span class="lbl">10 / Referência das planilhas</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
-  <h2>Estrutura do Database e do Config que vêm no pacote</h2>
+  <h2>Estrutura do Database, do Config e do que o app lê no DRP</h2>
   <h3>Database.xlsx</h3>
   <table>
     <tr><th style="width:24%">Aba</th><th>Conteúdo</th></tr>
@@ -335,16 +354,24 @@ Margem bruta    = resultado ÷ valor líquido</pre>
   <table>
     <tr><th style="width:24%">Aba</th><th>Conteúdo</th></tr>
     <tr><td class="k">Leia-me</td><td>Resumo do que preencher em cada aba.</td></tr>
-    <tr><td class="k">Impostos · Perfis · Dias Uteis</td><td>Regras de cálculo: alíquotas e OPEX, ratecards e custos por perfil, dias e horas úteis por mês.</td></tr>
+    <tr><td class="k">Impostos · Dias Uteis</td><td>Alíquotas e OPEX; dias e horas úteis por mês.</td></tr><tr><td class="k">Perfis</td><td>Alternativa usada só quando não há DRP na pasta.</td></tr>
     <tr><td class="k">Revenue State · Status da Proposta · PowerHouse</td><td>Listas dos formulários.</td></tr>
     <tr><td class="k">Projetos · Clientes x Tabelas · BP por Cliente</td><td>Mantidas pelo app a cada gravação (BP por Cliente pode ser preenchida à mão).</td></tr>
+  </table>
+  <h3>DRP · aba Custo Referência (somente leitura)</h3>
+  <table>
+    <tr><th style="width:34%">Coluna</th><th>Uso no app</th></tr>
+    <tr><td class="k">INNOVATION STUDIO · Perfil · Senioridade</td><td>Listas dos formulários de contrato e de alocação.</td></tr>
+    <tr><td class="k">&lt;ano&gt; PC para Ratecard (com overhead)</td><td>Custo/h sugerido.</td></tr>
+    <tr><td class="k">Custo Total &lt;ano&gt; (Sem Overhead)</td><td>Custo/h alternativo (botão "Usar custo sem overhead").</td></tr>
+    <tr><td class="k">Ratecard 40% (&lt;ano&gt;)</td><td>R$/h sugerido.</td></tr>
   </table>
 </section>
 
 <!-- ============ ENCERRAMENTO ============ -->
 <section class="page closing">
   <img src="img/airr-logo-white.svg" alt="AI/R Agentic AI Engineering">
-  <h2>Pronto para começar: prepare o Config, conecte a pasta e crie o primeiro projeto ↗</h2>
+  <h2>Pronto para começar: salve o DRP mais atual, conecte a pasta e crie o primeiro projeto ↗</h2>
   <div class="contact">
     <b>DÚVIDAS</b><br>
     Operations Manager da sua POD<br>

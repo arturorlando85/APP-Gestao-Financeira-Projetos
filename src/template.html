@@ -536,7 +536,7 @@ function render() {
   root.innerHTML = `<div class="app">
     <aside class="side"><div class="brand">${AIR_LOGO}<div class="prod"><b>Safe Harbor</b>Controle financeiro · GPOD</div></div>
       ${nav('dashboard', 'dash', 'Dashboard')}${nav('projetos', 'proj', 'Projetos')}${canEditAny() ? nav('horas', 'hrs', 'Ajuste de horas') : ''}${canEditAny() ? nav('exportar', 'exp', 'Gerar planilha') : ''}
-      <div class="foot">${S.src ? `<span>Pasta <b>${esc(S.src.folder)}</b><br>${esc(S.src.name)} · ${esc(S.src.cfgName || '')}</span>` : ''}<span>Arquivos processados no seu navegador.</span><span class="internal">Internal</span></div></aside>
+      <div class="foot">${S.src ? `<span>Pasta <b>${esc(S.src.folder)}</b><br>${esc(S.src.name)} · ${esc(S.src.cfgName || '')}</span>` : ''}${S.drpInfo ? `<span><a href="#" data-act="drpInfo" style="color:inherit">${S.drp ? `DRP <b>${esc(drpVersionLabel(S.drpInfo))}</b>` : '<b>DRP não carregado</b>'}</a></span>` : ''}<span>Arquivos processados no seu navegador.</span><span class="internal">Internal</span></div></aside>
     <div class="main">
       <div class="top"><span class="file" title="${esc(S.src ? S.src.folder + ' / ' + S.fileName : S.fileName)}">${S.src ? '🔗' : '📄'} ${esc(S.src ? S.src.folder + ' / ' : '')}${esc(S.fileName)}</span>
         ${S.src ? `<span id="savestate">${saveLabel()}</span>` : (S.changes.length ? `<span class="badge">${S.changes.length} alteração(ões) não exportada(s)</span>` : '')}
@@ -576,7 +576,7 @@ function toast(t) { S.toast = t; renderOverlays(); clearTimeout(toast.t); toast.
 function welcome() {
   return `<div class="welcome">
     <div class="welcome-head"><div class="welcome-logo">${AIR_LOGO}</div><span class="internal">Internal</span></div>
-    <div><h1>Safe Harbor · Controle financeiro de projetos</h1><p class="muted">Conecte a pasta <b>Financeiro</b> (com Database.xlsx e Config.xlsx) para ver o dashboard e editar projetos, contratos, time e horas. Tudo é gravado direto nos dois arquivos.</p></div>
+    <div><h1>Safe Harbor · Controle financeiro de projetos</h1><p class="muted">Conecte a pasta <b>Financeiro</b> (com Database.xlsx, Config.xlsx e a planilha DRP) para ver o dashboard e editar projetos, contratos, time e horas. Tudo é gravado direto nos dois arquivos.</p></div>
     ${S.stored ? `<section class="card" style="display:grid;gap:10px"><h2>Abrir a pasta ${esc(S.stored.dir.name)}</h2>
       <p class="muted" style="margin:0">Database e Config da pasta <b>${esc(S.stored.dir.name)}</b></p>
       <div class="row"><button class="btn pri" data-act="reconnect">Abrir e sincronizar</button><button class="btn" data-act="connect">Escolher outra pasta</button><button class="btn ghost" data-act="forget">Esquecer</button></div></section>` : ''}
@@ -590,7 +590,7 @@ function welcome() {
       <li>Crie, edite e exclua projetos, contratos e alocações do time. O dashboard recalcula na hora.</li>
       <li><b>Database.xlsx</b>: contratos (2. Propostas) e o billing de cada cliente (abas BL_). <b>Config.xlsx</b>: regras (impostos, dias úteis, listas, perfis, clientes e tributação por projeto).</li>
       <li>Ao criar ou editar um projeto, o app atualiza os dois arquivos, preservando fórmulas, tabelas e formatação. O app também espelha no Database o que as fórmulas dele usam (alíquotas e chaves de tributação).</li>
-      <li>Impostos vêm da aba Impostos do Config; a isenção vem do Funding de cada contrato.</li></ul></div></div>`;
+      <li>Impostos vêm da aba Impostos do Config; a isenção vem do Funding de cada contrato.</li><li><b>DRP</b> (planilha da gestão, na mesma pasta): Innovation Studios, perfis, custos e ratecards por ano, lidos da aba Custo Referência. Mantenha sempre a versão mais atual.</li></ul></div></div>`;
 }
 function bindDrop() {
   const dz = $('#drop'), fi = $('#file'); if (!dz) return;
@@ -600,20 +600,22 @@ function bindDrop() {
 }
 async function kindOf(buf) { // identifica pelo conteúdo: Database tem "2. Propostas"; Config tem "Impostos"
   try { const z = await JSZip.loadAsync(buf); const wb = await z.file('xl/workbook.xml').async('string');
-    if (/name="2\. Propostas"/.test(wb)) return 'db'; if (/name="Impostos"/.test(wb)) return 'cfg'; } catch (e) {} return null;
+    if (/name="2\. Propostas"/.test(wb)) return 'db'; if (/name="Impostos"/.test(wb)) return 'cfg'; if (/name="Custo Refer/.test(wb)) return 'drp'; } catch (e) {} return null;
 }
 async function openFiles(files) {
   files = files.filter(f => /\.xlsx$/i.test(f.name)); if (!files.length) { toast('Escolha os arquivos .xlsx'); return; }
   S.busy = 'Lendo arquivos…'; renderOverlays();
   try {
-    let db = null, cfg = null;
-    for (const f of files) { const buf = await f.arrayBuffer(); const k = await kindOf(buf); if (k === 'db') db = { f, buf }; else if (k === 'cfg') cfg = { f, buf }; }
+    let db = null, cfg = null; const drps = [];
+    for (const f of files) { const buf = await f.arrayBuffer(); const k = await kindOf(buf); if (k === 'db') db = { f, buf }; else if (k === 'cfg') cfg = { f, buf }; else if (k === 'drp') drps.push({ name: f.name, lastModified: f.lastModified, size: f.size, version: drpVersionOf(f.name), file: f }); }
     if (!db) throw new Error('não encontrei o Database (arquivo com a aba 2. Propostas)');
     const m = await C.load(db.buf); if (cfg) await C.loadConfig(m, cfg.buf);
+    await loadDrp(sortDrps(drps)); applyDrp(m);
     S.m = m; S.fileName = db.f.name; S.cfgFileName = cfg ? cfg.f.name : null; S.ver++; S.changes = []; S.adj.draft = {}; S.view = 'dashboard'; S.projId = null; S.f.year = ''; S.f.month = ''; S.src = null;
     if (!cfg) toast('Config.xlsx não foi enviado: usando as regras do próprio Database. Envie os dois arquivos juntos para usar o Config.');
   } catch (e) { console.error(e); toast('Não consegui ler os arquivos: ' + e.message); }
   S.busy = null; render();
+  if (S.m) drpReminder();
 }
 async function openFile(f) { return openFiles([f]); }
 
@@ -994,6 +996,25 @@ function modalHtml() {
   }
   if (md.kind === 'lockName') return wrap('Seu nome para a trava de edição', `<p class="muted" style="margin:0">Enquanto você edita, as outras pessoas veem "<b>seu nome</b> está editando". Fica guardado só neste navegador; não é login nem perfil.</p>
       <label class="field">Nome<input name="ename" value="${esc(myName())}" autocomplete="name"></label>`, 'Continuar');
+  if (md.kind === 'drp') {
+    const i = S.drpInfo || { missing: true }; const age = drpAgeDays(i);
+    const where = S.src ? `na pasta <b>${esc(S.src.folder)}</b>` : 'entre os arquivos enviados';
+    const title = i.missing ? 'Planilha DRP não encontrada' : i.error ? 'Não consegui ler a planilha DRP' : 'Planilha DRP em uso';
+    let body;
+    if (i.missing) body = `<p style="margin:0">Não encontrei a planilha <b>DRP</b> ${where}. Ela é a fonte de Innovation Studios, perfis, custos e ratecards usados ao criar projetos e adicionar profissionais.</p>
+      <div class="note">${PERFIS().length ? 'Enquanto isso, o app usa a aba <b>Perfis</b> do Config.' : 'Sem o DRP, os formulários não listam Innovation Studios e não sugerem custo nem ratecard.'} Peça à gestão a versão mais atual e salve-a na pasta Financeiro com um nome que comece por <b>DRP</b> (ex.: <code>DRP AIR BR V20260925.xlsx</code>).</div>`;
+    else if (i.error) body = `<p style="margin:0">O arquivo <b>${esc(i.name)}</b> foi encontrado, mas não consegui lê-lo: ${esc(i.error)}.</p>
+      <div class="note">Confira se ele tem a aba <b>Custo Referência</b> com as colunas INNOVATION STUDIO, Perfil, Senioridade, Custo Total e Ratecard por ano. ${PERFIS().length ? 'Enquanto isso, o app usa a aba Perfis do Config.' : ''}</div>`;
+    else body = `<p style="margin:0">Innovation Studios, perfis, custos e ratecards vêm do DRP:</p>
+      <div class="dl" style="margin:10px 0"><div><span>Arquivo</span>${esc(i.name)}</div><div><span>Versão</span>${i.version ? drpDate(i.version) : '—'}</div><div><span>Salvo em</span>${new Date(i.lastModified).toLocaleDateString('pt-BR')}</div><div><span>Conteúdo</span>${i.perfis} perfis · ${i.istudios} iStudios · ${i.anos[0]}–${i.anos[i.anos.length - 1]}</div></div>
+      ${age != null && age > DRP_OLD_DAYS ? `<div class="note warn">Esta versão é de ${age} dias atrás. Confirme com a gestão se existe uma versão mais nova.</div>` : ''}
+      ${i.others && i.others.length ? `<div class="note warn">Há ${i.others.length + 1} arquivos DRP ${where}; estou usando o mais recente. Remova as versões antigas: ${i.others.map(esc).join(', ')}.</div>` : ''}`;
+    return `<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <header><h2>${esc(title)}</h2><span class="spacer"></span><button type="button" class="btn ghost" data-act="close" aria-label="Fechar">✕</button></header>
+      <div class="body" style="display:grid;gap:10px">${body}
+      <div class="note"><b>Mantenha sempre a versão mais atual do DRP.</b> Quando a gestão enviar uma nova versão, substitua o arquivo antigo na pasta Financeiro. O app confere o DRP toda vez que é aberto.</div></div>
+      <footer><button type="button" class="btn pri" data-act="close">Entendi</button></footer></div></div>`;
+  }
   if (md.kind === 'overwritten') return `<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true" aria-label="Itens sumiram da planilha">
     <header><h2>A planilha foi sobrescrita e perdeu alterações do app</h2></header>
     <div class="body"><p style="margin:0">${md.origin === 'stored' ? 'A última gravação feita por este app' : 'O que o app tinha gravado'}${md.at ? ' (' + esc(new Date(md.at).toLocaleString('pt-BR')) + ')' : ''} não está mais em <b>${esc(S.src ? S.src.name : S.fileName)}</b>. Normalmente isso acontece quando o Excel, ou o salvamento automático do SharePoint/OneDrive, grava uma versão que estava aberta antes.</p>
@@ -1017,19 +1038,27 @@ function modalHtml() {
 const addMonth = (iso, n) => { const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 10); };
 
 
-// sugere custo e ratecard pela aba Perfis do Config (iStudio + Perfil + Senioridade)
+// sugere custo e ratecard pela planilha DRP (aba Custo Referência) ou, sem DRP, pela aba Perfis do Config
 const plain = s => norm(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[_\s]+/g, ' ');
 function rateFor(ist, perfil, sen, month) {
-  const P = S.m && S.m.config && S.m.config.perfis; if (!P || !perfil) return null;
+  const P = PERFIS(); if (!P.length || !perfil) return null;
   const cand = P.filter(p => plain(p.perfil) === plain(perfil) && (!sen || plain(p.senioridade) === plain(sen)));
   if (!cand.length) return null;
   const hit = cand.find(p => ist && istMatch(p.istudio, ist)) || cand[0];
-  const y27 = String(month || '').startsWith('2027');
-  return { custo: y27 ? hit.custo2027 : hit.custo2026, rate: y27 ? hit.rate2027 : hit.rate2026, ano: y27 ? 2027 : 2026, istudio: hit.istudio, exato: !!(ist && istMatch(hit.istudio, ist)) };
+  const anos = Object.keys(hit.anos || {}).map(Number).filter(y => hit.anos[y] && (hit.anos[y].rate || hit.anos[y].custo)).sort((a, b) => a - b);
+  if (!anos.length) return null;
+  const pedido = +String(month || '').slice(0, 4) || today.getFullYear();
+  const ano = anos.includes(pedido) ? pedido : pedido < anos[0] ? anos[0] : anos[anos.length - 1];
+  const a = hit.anos[ano];
+  return { custo: a.custo, custoOH: a.custoOH != null ? a.custoOH : null, rate: a.rate, ano, pedido, fonte: hit.fonte || 'Config', istudio: hit.istudio, exato: !!(ist && istMatch(hit.istudio, ist)) };
 }
-// ---- Perfis do Config: iStudio → Papel → Senioridade, com ratecard e custo padrão ----
+// custo padrão: com o overhead do DRP; sem DRP, custo do Config com o OPEX da aba Impostos
+const costDefault = r => r.custoOH != null ? r.custoOH : r.custo ? r.custo * (1 + (S.m.taxes.OPEX || 0)) : null;
+// ---- Perfis: iStudio → Papel → Senioridade, com ratecard e custo padrão ----
 const istMatch = (a, b) => { const x = squash(a), y = squash(b); return !!x && !!y && (x === y || x.startsWith(y) || y.startsWith(x)); };
-const PERFIS = () => (S.m && S.m.config && S.m.config.perfis) || [];
+const cfgPerfis = () => ((S.m && S.m.config && S.m.config.perfis) || []).map(p => ({ ...p, fonte: 'Config', anos: { 2026: { custo: p.custo2026, rate: p.rate2026 }, 2027: { custo: p.custo2027, rate: p.rate2027 } } }));
+const PERFIS = () => (S.drp && S.drp.perfis.length ? S.drp.perfis : cfgPerfis());
+const perfisFonte = () => (S.drp && S.drp.perfis.length ? 'DRP' : 'Config');
 const perfisOf = ist => ist ? PERFIS().filter(p => istMatch(p.istudio, ist)) : [];
 const SEN_ORDER = ['trainee', 'junior', 'pleno', 'senior', 'especialista'];
 function istSelect(v) {
@@ -1038,7 +1067,7 @@ function istSelect(v) {
   const inTab = v && tab.includes(v), inOth = v && others.includes(v);
   return `<select name="iStudio" data-pf="ist"><option value="">Selecione</option>
     ${v && !inTab && !inOth ? `<option selected value="${esc(v)}">${esc(v)}${perfisOf(v).length ? '' : ' (sem tabela de perfis)'}</option>` : ''}
-    <optgroup label="Com tabela de perfis (Config)">${tab.map(x => `<option${x === v ? ' selected' : ''}>${esc(x)}</option>`).join('')}</optgroup>
+    <optgroup label="Com tabela de perfis (${perfisFonte()})">${tab.map(x => `<option${x === v ? ' selected' : ''}>${esc(x)}</option>`).join('')}</optgroup>
     ${others.length ? `<optgroup label="Sem tabela de perfis">${others.map(x => `<option${x === v ? ' selected' : ''}>${esc(x)}</option>`).join('')}</optgroup>` : ''}</select>`;
 }
 function papelField(ist, v) {
@@ -1078,7 +1107,7 @@ function autoRate(why) {
   if (ok && why) {
     const prev = md.auto; const untouched = !prev || (iR.value === prev.rate && iC.value === prev.cost);
     if (why === 'profile' || (why === 'month' && (untouched || (!iR.value && !iC.value))) || (why === 'open' && !iR.value && !iC.value)) {
-      const opex = S.m.taxes.OPEX || 0; const rate = r.rate ? (+r.rate).toFixed(2) : iR.value; const cost = r.custo ? (r.custo * (1 + opex)).toFixed(4) : iC.value;
+      const cd = costDefault(r); const rate = r.rate ? (+r.rate).toFixed(2) : iR.value; const cost = cd ? cd.toFixed(4) : iC.value;
       iR.value = rate; iC.value = cost; md.auto = { rate, cost, ano: r.ano };
       [iR, iC].forEach(x => { x.classList.remove('flash'); void x.offsetWidth; x.classList.add('flash'); });
     }
@@ -1091,16 +1120,18 @@ function updateRateHint() {
   const r = rateFor(g('iStudio'), g('Papel'), g('Senioridade'), g('Mês de Execução'));
   if (!r || !r.exato || !g('Senioridade') || (!r.custo && !r.rate)) {
     box.hidden = !(g('iStudio') && !perfisOf(g('iStudio')).length);
-    box.innerHTML = 'Este iStudio não tem tabela de perfis no Config. Informe o papel, o R$/h e o custo manualmente.'; return;
+    box.innerHTML = `Este iStudio não tem tabela de perfis ${perfisFonte() === 'DRP' ? 'no DRP' : 'no Config'}. Informe o papel, o R$/h e o custo manualmente.`; return;
   }
-  const opex = (S.m.taxes.OPEX || 0); const custoOpex = r.custo ? r.custo * (1 + opex) : null;
+  const drp = r.fonte === 'DRP'; const opex = (S.m.taxes.OPEX || 0); const custoOH = costDefault(r);
   const iR = f.querySelector('[name="R$/H"]'), iC = f.querySelector('[name="Custo Profissional"]');
   const same = (a, b) => b != null && Math.abs((+a || 0) - b) < 0.005;
-  const rateOk = same(iR.value, r.rate), costOk = same(iC.value, custoOpex) ? 'opex' : same(iC.value, r.custo) ? 'base' : '';
+  const rateOk = same(iR.value, r.rate), costOk = same(iC.value, custoOH) ? 'opex' : same(iC.value, r.custo) ? 'base' : '';
+  const ohTxt = drp ? 'com overhead (DRP)' : `com OPEX de ${pct(opex)}`;
   box.hidden = false;
-  box.innerHTML = `<b>Valores padrão · Perfis (Config, ${r.ano})</b>: ratecard <b>${brl2(r.rate)}</b>/h · custo <b>${brl2(custoOpex)}</b>/h com OPEX de ${pct(opex)} (${brl2(r.custo)}/h sem overhead).
+  box.innerHTML = `<b>Valores padrão · ${drp ? `DRP ${esc(drpVersionLabel(S.drpInfo))}, ${r.ano}` : `Perfis (Config, ${r.ano})`}</b>: ratecard <b>${brl2(r.rate)}</b>/h · custo <b>${brl2(custoOH)}</b>/h ${ohTxt} (${brl2(r.custo)}/h sem overhead).
+    ${r.ano !== r.pedido ? `<div class="muted" style="margin-top:4px">${drp ? 'O DRP' : 'O Config'} não tem valores para ${r.pedido}; usando ${r.ano}.</div>` : ''}
     <div class="muted" style="margin-top:4px">${rateOk && costOk ? `Preenchido com o padrão${costOk === 'base' ? ' (custo sem overhead)' : ''}. Você pode alterar os valores à mão.` : 'Os valores do formulário estão diferentes do padrão.'}</div>
-    <div class="row" style="margin-top:6px">${rateOk ? '' : `<button type="button" class="btn sm" data-act="useRate" data-v="${r.rate || ''}">Usar ratecard padrão</button>`}${costOk === 'opex' ? '' : `<button type="button" class="btn sm" data-act="useCost" data-v="${custoOpex ? custoOpex.toFixed(4) : ''}">Usar custo com OPEX</button>`}${costOk === 'base' ? '' : `<button type="button" class="btn sm" data-act="useCost" data-v="${r.custo ? r.custo.toFixed(4) : ''}">Usar custo sem overhead</button>`}</div>`;
+    <div class="row" style="margin-top:6px">${rateOk ? '' : `<button type="button" class="btn sm" data-act="useRate" data-v="${r.rate || ''}">Usar ratecard padrão</button>`}${costOk === 'opex' ? '' : `<button type="button" class="btn sm" data-act="useCost" data-v="${custoOH ? custoOH.toFixed(4) : ''}">Usar custo ${drp ? 'com overhead' : 'com OPEX'}</button>`}${costOk === 'base' ? '' : `<button type="button" class="btn sm" data-act="useCost" data-v="${r.custo ? r.custo.toFixed(4) : ''}">Usar custo sem overhead</button>`}</div>`;
 }
 
 // ---------------- ações ----------------
@@ -1108,6 +1139,7 @@ const A = {
   go: el => { if (S.view === 'horas' && el.dataset.v !== 'horas' && Object.keys(S.adj.draft).length) toast('Você tem ajustes de horas não aplicados; eles ficam guardados na tela Ajuste de horas.'); S.view = el.dataset.v; S.modal = null; render(); window.scrollTo(0, 0); },
   open: el => { S.projId = el.dataset.id; S.view = 'projeto'; S.teamMonth = 'all'; render(); window.scrollTo(0, 0); },
   swap: async () => { if (S.lock && S.lock.mine) await releaseLock(); if (S.src && !S.changes.length) { S.m = null; S.src = null; render(); return; } if (S.changes.length) { S.modal = { kind: 'confirm', title: 'Trocar arquivo', html: `Há ${S.changes.length} alteração(ões) não exportada(s) que serão perdidas.`, ok: 'Descartar e trocar', onOk: () => { S.m = null; S.src = null; S.changes = []; render(); } }; renderOverlays(); } else { S.m = null; render(); } },
+  drpInfo: () => { S.modal = { kind: 'drp' }; renderOverlays(); },
   close: () => { if (S.modal && S.modal.first) { toast('Cadastre o primeiro administrador para continuar.'); return; } S.modal = null; renderOverlays(); },
   closeBg: (el, e) => { if (e.target === el) A.close(); },
   tm: el => { S.teamMonth = el.dataset.m; render(); },
@@ -1409,10 +1441,57 @@ const idb = (() => {
 async function loadStored() { if (!FS_OK) return; const c = await idb.get('conn'); if (c && c.dir && c.name) { S.stored = c; if (!S.m) render(); } }
 const isXlsx = n => /\.xlsx$/i.test(n) && !/^~\$/.test(n);
 const isDbName = n => /database/i.test(n), isCfgName = n => /config/i.test(n);
+const isDrpName = n => /(^|[^a-z])drp([^a-z]|$)/i.test(n) && !isDbName(n) && !isCfgName(n);
 async function findPair(dir) {
   const files = []; for await (const [n, h] of dir.entries()) if (h.kind === 'file' && isXlsx(n)) files.push(n);
   const pick = (re, exact) => files.find(f => f.toLowerCase() === exact) || files.find(f => re.test(f));
-  return { db: pick(/database/i, 'database.xlsx'), cfg: pick(/config/i, 'config.xlsx'), files };
+  return { db: pick(/database/i, 'database.xlsx'), cfg: pick(/config/i, 'config.xlsx'), drps: files.filter(isDrpName), files };
+}
+
+// ---------------- planilha DRP (da gestão; somente leitura) ----------------
+// Fonte de Innovation Studios, perfis, custos e ratecards. É checada toda vez que o app abre a pasta.
+const DRP_OLD_DAYS = 90;
+const drpVersionOf = n => { const m = /v\.?\s?(\d{4})(\d{2})(\d{2})/i.exec(n || ''); return m ? `${m[1]}-${m[2]}-${m[3]}` : null; };
+const drpDate = iso => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+const drpVersionLabel = i => !i ? '' : i.version ? 'V' + i.version.replace(/-/g, '') : i.name ? i.name.replace(/\.xlsx$/i, '') : '';
+// mais recente primeiro: pela versão no nome (V20260925) e, em seguida, pela data do arquivo
+const sortDrps = list => list.sort((a, b) => (b.version || '').localeCompare(a.version || '') || b.lastModified - a.lastModified);
+async function drpFilesIn(dir, names) {
+  const out = []; for (const n of names) { try { const f = await (await dir.getFileHandle(n)).getFile(); out.push({ name: n, lastModified: f.lastModified, size: f.size, version: drpVersionOf(n), file: f }); } catch (e) {} }
+  return sortDrps(out);
+}
+async function loadDrp(list) {
+  const p = list[0];
+  if (!p) { S.drp = null; S.drpInfo = { missing: true }; return; }
+  const base = { name: p.name, version: p.version, lastModified: p.lastModified, others: list.slice(1).map(x => x.name) };
+  if (S.drp && S.drpInfo && S.drpInfo.name === p.name && S.drpInfo.lastModified === p.lastModified) { S.drpInfo = { ...S.drpInfo, ...base }; return; }
+  try { const d = await C.loadDRP(await p.file.arrayBuffer()); S.drp = d; S.drpInfo = { ...base, perfis: d.perfis.length, istudios: d.istudios.length, anos: d.anos }; }
+  catch (e) { console.error(e); S.drp = null; S.drpInfo = { ...base, error: e.message || String(e) }; }
+}
+// listas dos formulários (iStudio, papel, senioridade) passam a vir do DRP
+function applyDrp(m) {
+  if (!m || !S.drp || !S.drp.perfis.length) return m;
+  const P = S.drp.perfis; const u = a => [...new Set(a.filter(Boolean))].sort((x, y) => x.localeCompare(y));
+  const sk = s => { const i = SEN_ORDER.indexOf(plain(s)); return i < 0 ? 99 : i; };
+  m.lists.istudio = u(P.map(p => p.istudio)); m.lists.perfil = u(P.map(p => p.perfil));
+  m.lists.senioridade = [...new Set(P.map(p => p.senioridade).filter(Boolean))].sort((a, b) => sk(a) - sk(b) || a.localeCompare(b));
+  return m;
+}
+const drpAgeDays = i => i && i.version ? Math.floor((Date.now() - Date.parse(i.version + 'T00:00:00')) / 86400000) : null;
+// lembrete a cada execução do app (uma vez por abertura da página)
+function drpReminder() {
+  if (S.drpReminded) return; S.drpReminded = true;
+  if (S.modal) { const i = S.drpInfo || {}; toast(i.missing ? 'DRP não encontrado na pasta Financeiro.' : `DRP em uso: ${i.name}. Mantenha sempre a versão mais atual.`); return; }
+  S.modal = { kind: 'drp' }; renderOverlays();
+}
+// relê o DRP se o arquivo mudou (nova versão salva na pasta) sem precisar reabrir o app
+async function refreshDrp() {
+  if (!S.src || !S.m) return;
+  const p = await findPair(S.src.dir); const list = await drpFilesIn(S.src.dir, p.drps); const top = list[0]; const i = S.drpInfo || {};
+  if (!top && i.missing) return;
+  if (top && i.name === top.name && i.lastModified === top.lastModified && (i.others || []).length === list.length - 1) return;
+  await loadDrp(list); applyDrp(S.m); S.ver++; render();
+  toast(!S.drpInfo || S.drpInfo.missing ? 'A planilha DRP foi removida da pasta Financeiro.' : S.drpInfo.error ? 'Não consegui ler o novo DRP: ' + S.drpInfo.error : `DRP atualizado: ${S.drpInfo.name}.`);
 }
 
 async function connectFolder() {
@@ -1434,13 +1513,14 @@ async function reconnect() {
 }
 async function forgetConn() { await idb.del('conn'); S.stored = null; render(); }
 async function openFromFolder(dir, _name, opts = {}) {
-  S.busy = 'Lendo Database e Config…'; renderOverlays();
+  S.busy = 'Lendo Database, Config e DRP…'; renderOverlays();
   try {
     const p = await findPair(dir);
     if (!p.db || !p.cfg) throw new Error('a pasta precisa ter Database.xlsx e Config.xlsx');
     const fh = await dir.getFileHandle(p.db); const file = await fh.getFile();
     const cfh = await dir.getFileHandle(p.cfg); const cfile = await cfh.getFile();
     const m = await C.load(await file.arrayBuffer()); await C.loadConfig(m, await cfile.arrayBuffer());
+    await loadDrp(await drpFilesIn(dir, p.drps)); applyDrp(m);
     const keepView = S.m ? S.view : 'dashboard';
     S.m = m; S.fileName = p.db; S.ver++; S.changes = []; S.adj.draft = {}; S.f.year = ''; S.f.month = '';
     S.src = { dir, fh, name: p.db, lastModified: file.lastModified, size: file.size, folder: dir.name, cfh, cfgName: p.cfg, cfgLastModified: cfile.lastModified };
@@ -1450,7 +1530,8 @@ async function openFromFolder(dir, _name, opts = {}) {
   } catch (e) { console.error(e); toast('Não consegui ler a pasta ' + dir.name + ': ' + (e.message || e.name)); }
   S.busy = null; render();
   if (S.src) { pruneBackups(S.src.dir); initLock(); }
-  if (S.m && S.src && opts.checkStored !== false && !S.modal) checkStoredSave(S.src.name);
+  if (S.m && S.src && opts.checkStored !== false && !S.modal) await checkStoredSave(S.src.name);
+  if (S.m) drpReminder();
 }
 let saveTimer = null, saveAgain = false;
 function scheduleSave(ms = 3500) { clearTimeout(saveTimer); S.save.state = 'pending'; saveTimer = setTimeout(() => { if (S.modal) return scheduleSave(1500); saveNow(); }, ms); }
@@ -1506,6 +1587,7 @@ function paintSave() { const el = document.getElementById('savestate'); if (el) 
 async function checkExternal() {
   if (!S.src || S.save.state === 'saving') return;
   try { await checkConfig(); } catch (e) {}
+  try { await refreshDrp(); } catch (e) { console.warn(e); }
   try {
     const f = await S.src.fh.getFile(); const cf = S.src.cfh ? await S.src.cfh.getFile() : null;
     if (f.lastModified !== S.src.lastModified || (cf && cf.lastModified !== S.src.cfgLastModified)) {
@@ -1707,7 +1789,7 @@ async function doExport() {
   const items = S.changes.map(c => c.desc);
   if (!S.src) try {
     // recarrega o modelo a partir do arquivo gerado (base consistente para novas edições)
-    const m2 = await C.load(out.slice().buffer); if (cout) await C.loadConfig(m2, cout.slice().buffer); S.m = m2; S.ver++;
+    const m2 = await C.load(out.slice().buffer); if (cout) await C.loadConfig(m2, cout.slice().buffer); applyDrp(m2); S.m = m2; S.ver++;
     if (keepKey) { const p = m2.projects.find(p => norm(p.client) + '|' + norm(p.name) === keepKey); S.projId = p ? p.id : null; if (!p) S.view = 'projetos'; }
   } catch (e) { console.error(e); }
   S.busy = null; renderOverlays();

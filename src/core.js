@@ -758,6 +758,64 @@
     return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   }
 
-  const api = { load, loadConfig, exportConfig, exportXlsx, calcAlloc, projectOf, refreshTrib, taxRate, shiftFormula, norm, serialToISO, isoToSerial, BL_INPUT, PROP_FIELDS, nid };
+  // ================= DRP (somente leitura) =================
+  // Lê a aba "Custo Referência" da planilha DRP fornecida pela gestão: Innovation Studios, perfis,
+  // senioridades e, por ano, salário, personnel cost, custo com/sem overhead e ratecard.
+  const plainTxt = s => norm(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+  async function loadDRP(buf, JSZipLib) {
+    const JSZ = JSZipLib || root.JSZip;
+    const zip = await JSZ.loadAsync(buf);
+    const txt = p => zip.file(p) ? zip.file(p).async('string') : Promise.resolve(null);
+    const wb = await txt('xl/workbook.xml'); const rels = await txt('xl/_rels/workbook.xml.rels');
+    if (!wb || !rels) throw new Error('o arquivo não é uma planilha Excel válida');
+    const relMap = {}; rels.replace(/<Relationship\s([^>]*?)\/>/g, (x, a) => { relMap[attr(a, 'Id')] = attr(a, 'Target'); });
+    let sheetName = null, sheetPath = null;
+    wb.replace(/<sheet\s([^>]*?)\/>/g, (x, a) => {
+      const name = decodeXml(attr(a, 'name'));
+      if (!sheetPath && /^custo referencia$/.test(plainTxt(name))) { let t = relMap[attr(a, 'r:id')]; sheetPath = t.startsWith('/') ? t.slice(1) : 'xl/' + t; sheetName = name; }
+    });
+    if (!sheetPath) throw new Error('não encontrei a aba "Custo Referência"');
+    const sh = parseSheet(await txt(sheetPath), parseSST(await txt('xl/sharedStrings.xml')));
+    // linha de cabeçalho: a primeira (até a 15ª) que tem "INNOVATION STUDIO"
+    let hr = null; const head = {};
+    for (let r = 1; r <= 15 && hr == null; r++) {
+      const row = sh.rows.get(r); if (!row) continue;
+      for (const [c, x] of row.cells) if (typeof x.v === 'string' && /innovation studio/.test(plainTxt(x.v))) hr = r;
+    }
+    if (hr == null) throw new Error('a aba "Custo Referência" não tem a coluna INNOVATION STUDIO');
+    for (const [c, x] of sh.rows.get(hr).cells) if (typeof x.v === 'string' && x.v.trim()) head[c] = plainTxt(x.v);
+    const colOf = re => { for (const c in head) if (re.test(head[c])) return +c; return null; };
+    const cols = { contrato: colOf(/^contrato$/), istudio: colOf(/innovation studio/), perfil: colOf(/^perfil$/), senioridade: colOf(/^senioridade$/), completo: colOf(/^perfil completo$/) };
+    if (!cols.perfil || !cols.senioridade) throw new Error('a aba "Custo Referência" precisa das colunas Perfil e Senioridade');
+    const yearCols = {}; // ano -> { salario, pc, custoOH, custo, rate }
+    const setY = (y, k, c) => { (yearCols[y] = yearCols[y] || {})[k] = +c; };
+    for (const c in head) {
+      const h = head[c]; let m;
+      if ((m = /^salario referencia (\d{4})/.exec(h))) setY(m[1], 'salario', c);
+      else if ((m = /^personnel cost (\d{4})/.exec(h))) setY(m[1], 'pc', c);
+      else if ((m = /^(\d{4}) pc para ratecard/.exec(h))) setY(m[1], 'custoOH', c);
+      else if ((m = /^custo total (\d{4})/.exec(h))) setY(m[1], 'custo', c);
+      else if ((m = /^ratecard.*\((\d{4})\)/.exec(h))) setY(m[1], 'rate', c);
+    }
+    const anos = Object.keys(yearCols).map(Number).filter(y => yearCols[y].rate || yearCols[y].custo).sort((a, b) => a - b);
+    if (!anos.length) throw new Error('a aba "Custo Referência" não tem colunas de custo e ratecard por ano');
+    const num = v => (typeof v === 'number' && isFinite(v) ? v : null);
+    const str = v => (v == null ? '' : String(v).trim());
+    const perfis = []; const maxR = Math.max(...sh.rows.keys());
+    for (let r = hr + 1; r <= maxR; r++) {
+      const row = sh.rows.get(r); if (!row) continue;
+      const g = c => { const x = c ? row.cells.get(c) : null; return x ? x.v : null; };
+      const istudio = str(g(cols.istudio)), perfil = str(g(cols.perfil)), senioridade = str(g(cols.senioridade));
+      if (!perfil || !senioridade) continue;
+      const porAno = {};
+      for (const y of anos) { const yc = yearCols[y]; const v = { salario: num(g(yc.salario)), pc: num(g(yc.pc)), custoOH: num(g(yc.custoOH)), custo: num(g(yc.custo)), rate: num(g(yc.rate)) }; if (v.rate != null || v.custo != null) porAno[y] = v; }
+      perfis.push({ contrato: str(g(cols.contrato)), istudio, perfil, senioridade, completo: str(g(cols.completo)), anos: porAno, row: r, fonte: 'DRP' });
+    }
+    if (!perfis.length) throw new Error('a aba "Custo Referência" não tem perfis preenchidos');
+    const uniq = a => [...new Set(a.filter(Boolean))].sort((x, y) => x.localeCompare(y));
+    return { sheet: sheetName, perfis, anos, istudios: uniq(perfis.map(p => p.istudio)), contratos: uniq(perfis.map(p => p.contrato)) };
+  }
+
+  const api = { load, loadConfig, loadDRP, exportConfig, exportXlsx, calcAlloc, projectOf, refreshTrib, taxRate, shiftFormula, norm, serialToISO, isoToSerial, BL_INPUT, PROP_FIELDS, nid };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.SHCore = api;
 })(typeof window !== 'undefined' ? window : globalThis);
