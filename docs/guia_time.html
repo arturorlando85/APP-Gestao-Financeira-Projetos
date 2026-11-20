@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Safe Harbor Financeiro · Guia do Time</title>
+<style>
+@page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; color: #1d1f23; font-size: 10.5pt; line-height: 1.5; margin: 0; }
+h1 { font-size: 26pt; margin: 0 0 6px; letter-spacing: -0.5px; }
+h2 { font-size: 15pt; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #1d1f23; page-break-after: avoid; }
+h3 { font-size: 11.5pt; margin: 16px 0 6px; page-break-after: avoid; }
+p { margin: 6px 0; }
+ul, ol { margin: 6px 0; padding-left: 20px; } li { margin: 2px 0; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9.5pt; page-break-inside: avoid; }
+th, td { border: 1px solid #d5d8de; padding: 5px 7px; text-align: left; vertical-align: top; }
+th { background: #f1f3f6; font-weight: 600; }
+code { font-family: Consolas, monospace; font-size: 9pt; background: #f1f3f6; padding: 1px 4px; border-radius: 3px; }
+pre { font-family: Consolas, monospace; font-size: 9pt; background: #f1f3f6; padding: 8px 10px; border-radius: 4px; white-space: pre-wrap; page-break-inside: avoid; }
+.cover { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
+.cover .tag { font-size: 10pt; text-transform: uppercase; letter-spacing: 2px; color: #5b6170; }
+.cover .sub { font-size: 13pt; color: #3a3f4a; max-width: 140mm; }
+.cover .meta { font-size: 9.5pt; color: #5b6170; border-top: 1px solid #d5d8de; padding-top: 10px; }
+.bar { width: 60px; height: 6px; background: #1d1f23; margin: 18px 0; }
+.box { border: 1px solid #d5d8de; border-left: 4px solid #1d1f23; padding: 8px 12px; margin: 10px 0; page-break-inside: avoid; background: #fafbfc; }
+.warn { border-left-color: #b26b00; background: #fff8ec; }
+.bad { border-left-color: #b3261e; background: #fdf1f0; }
+.good { border-left-color: #1e7a3c; background: #eff8f2; }
+.box b.t { display: block; margin-bottom: 2px; }
+.toc ol { columns: 2; column-gap: 24px; } .toc li { break-inside: avoid; }
+.steps li { margin: 5px 0; }
+.chip { display: inline-block; padding: 0 6px; border-radius: 3px; font-size: 8.5pt; font-weight: 600; }
+.c-r { background: #fdf1f0; color: #b3261e; } .c-y { background: #fff8ec; color: #8a5300; } .c-g { background: #eff8f2; color: #1e7a3c; }
+.sev-a { color: #b3261e; font-weight: 600; } .sev-m { color: #8a5300; font-weight: 600; } .sev-b { color: #1e7a3c; font-weight: 600; }
+.pb { page-break-before: always; }
+.small { font-size: 9pt; color: #5b6170; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div>
+    <div class="tag">Safe Harbor GPOD · Gestão Financeira de Projetos</div>
+    <div class="bar"></div>
+    <h1>Safe Harbor Financeiro</h1>
+    <p class="sub">Guia de uso para o time e análise técnica do aplicativo que lê e grava direto nas planilhas <b>Database.xlsx</b> e <b>Config.xlsx</b> da pasta Financeiro.</p>
+  </div>
+  <div class="toc">
+    <h3>Conteúdo</h3>
+    <ol>
+      <li>Visão geral</li>
+      <li>Antes de começar</li>
+      <li>Primeiro acesso, passo a passo</li>
+      <li>Leitura e edição: a trava</li>
+      <li>As telas do app</li>
+      <li>Regras de negócio e cálculos</li>
+      <li>Gravação, backups e conflitos</li>
+      <li>Boas práticas e o que evitar</li>
+      <li>Solução de problemas</li>
+      <li>Para quem desenvolve</li>
+      <li>Análise técnica: pontos fortes, riscos e recomendações</li>
+      <li>Estado do repositório</li>
+    </ol>
+  </div>
+  <div class="meta">
+    Fonte: repositório <b>arturorlando85/APP-Gest-o-Financeira-Projetos</b>, branch <code>app-inicial</code> (commit <code>7c1bf87</code>, PR nº 1 aberto para <code>main</code>).<br>
+    Gerado em 20/11/2026 · Versão do app: 1.0.0
+  </div>
+</section>
+
+<h2>1. Visão geral</h2>
+<p>O <b>Safe Harbor Financeiro</b> é a interface que o time usa para controlar a parte financeira dos projetos: contratos, alocação de profissionais, horas executadas, receita, custo e margem. Ele substitui a edição manual das planilhas, mas <b>as planilhas continuam sendo a base de dados</b>. Tudo o que o app grava aparece no Excel, e o que for alterado no Excel aparece no app.</p>
+<div class="box good"><b class="t">Como funciona, em uma frase</b>Um único arquivo HTML aberto no Chrome ou Edge acessa a pasta Financeiro sincronizada pelo OneDrive, lê as planilhas, mostra tudo em telas e grava as alterações de volta nos mesmos arquivos. Não há servidor nem banco de dados, e nenhum dado financeiro sai do seu computador.</div>
+<table>
+  <tr><th style="width:24%">Área</th><th>O que faz</th></tr>
+  <tr><td><b>Dashboard</b></td><td>4 visões prontas (executiva, rentabilidade, time e horas, contratos), 13 tipos de widget, filtros por período e dimensão, clique para filtrar, pontos de atenção automáticos. O layout é personalizável e pode ser exportado e importado em <code>.json</code>.</td></tr>
+  <tr><td><b>Projetos e contratos</b></td><td>Criar, editar e excluir projetos e contratos (aba <code>2. Propostas</code>). Um cliente novo ganha sua aba <code>BL_</code> a partir do <code>BL_Template</code>.</td></tr>
+  <tr><td><b>Time e alocação</b></td><td>Alocações por mês, com papel e senioridade filtrados pelo Innovation Studio e ratecard e custo preenchidos automaticamente a partir do Config. Permite replicar um mês inteiro para outro.</td></tr>
+  <tr><td><b>Ajuste de horas</b></td><td>Ajuste mensal das horas executadas, agrupado por cliente › projeto › profissional, com o motivo gravado na coluna <i>Obs</i>.</td></tr>
+  <tr><td><b>Uso em equipe</b></td><td>Trava de edição (uma pessoa edita por vez), gravação automática, backups com limpeza após 3 dias, detecção de alterações feitas fora do app e recuperação de itens perdidos.</td></tr>
+</table>
+
+<h2>2. Antes de começar</h2>
+<table>
+  <tr><th style="width:30%">Requisito</th><th>Detalhe</th></tr>
+  <tr><td>Navegador</td><td><b>Google Chrome ou Microsoft Edge para computador.</b> O app usa a <i>File System Access API</i>, que não existe no Safari, no Firefox nem no celular.</td></tr>
+  <tr><td>Pasta Financeiro sincronizada</td><td>A pasta <b>Financeiro</b> do SharePoint precisa estar sincronizada no computador pelo OneDrive, com os arquivos baixados (não só "na nuvem").</td></tr>
+  <tr><td>Arquivos na pasta</td><td>Um arquivo <code>Database*.xlsx</code> e um <code>Config*.xlsx</code>.</td></tr>
+  <tr><td>O app</td><td>O arquivo <code>SafeHarbor_Financeiro.html</code> (versão autossuficiente, com tudo embutido). Pegue-o na pasta <code>dist/</code> do repositório ou com quem administra o app.</td></tr>
+</table>
+<div class="box warn"><b class="t">Feche o Excel antes de editar no app</b>Se o Database ou o Config estiver aberto no Excel, o Windows bloqueia o arquivo e o app não consegue gravar. O app avisa: "Database ou Config está bloqueado (provavelmente aberto no Excel)".</div>
+
+<h2>3. Primeiro acesso, passo a passo</h2>
+<ol class="steps">
+  <li>Confirme que a pasta <b>Financeiro</b> está sincronizada e que o ícone do OneDrive mostra tudo em dia.</li>
+  <li>Abra o <code>SafeHarbor_Financeiro.html</code> com duplo clique (ou arraste para o Chrome ou Edge).</li>
+  <li>Clique em <b>Conectar pasta Financeiro</b> e escolha a pasta. O navegador pede permissão de leitura e gravação: clique em <b>Permitir</b>.</li>
+  <li>O app abre em <b>modo leitura</b>. Você já pode navegar no Dashboard e nos Projetos.</li>
+  <li>Para alterar algo, clique em <b>Editar</b> na barra do topo. Na primeira vez, o app pede <b>seu nome</b>: é o que os colegas verão enquanto você edita.</li>
+  <li>Ao terminar, clique em <b>Liberar edição</b>. Assim outra pessoa pode editar.</li>
+</ol>
+<p class="small">Nas próximas vezes, o navegador lembra a pasta: basta abrir o arquivo e confirmar a permissão.</p>
+<p>O app cria dentro da pasta Financeiro alguns itens próprios. <b>Não apague nem edite esses itens à mão:</b></p>
+<table>
+  <tr><th style="width:36%">Item</th><th>Para que serve</th></tr>
+  <tr><td><code>_safeharbor.lock</code></td><td>Arquivo da trava de edição (quem está editando e desde quando).</td></tr>
+  <tr><td><code>_backups_safeharbor/</code></td><td>Cópias de segurança do Database e do Config, feitas antes da primeira gravação de cada sessão.</td></tr>
+  <tr><td><code>_safeharbor_config/config.json</code></td><td>Cadastro compartilhado de pessoas e perfis.</td></tr>
+</table>
+
+<h2>4. Leitura e edição: a trava</h2>
+<p>Como as planilhas são arquivos comuns, duas pessoas gravando ao mesmo tempo poderiam apagar o trabalho uma da outra. Por isso <b>só uma pessoa edita por vez</b>. A barra no topo mostra a situação:</p>
+<table>
+  <tr><th style="width:32%">Barra</th><th>Significado e o que fazer</th></tr>
+  <tr><td><b>Somente leitura</b> · ninguém está editando</td><td>Clique em <b>Editar</b> para assumir.</td></tr>
+  <tr><td><b>Somente leitura</b> · Fulano está editando</td><td>Clique em <b>Pedir para editar</b>. Fulano recebe o aviso e, quando liberar, a edição passa para você automaticamente.</td></tr>
+  <tr><td><b>Você está editando</b></td><td>Para os outros, o app fica somente leitura. Se alguém pedir, aparece o aviso e o botão <b>Liberar agora</b>.</td></tr>
+</table>
+<h3>Regras de tempo da trava</h3>
+<ul>
+  <li>Enquanto você edita, o app confirma a trava a cada <b>60 segundos</b> e verifica mudanças a cada <b>30 segundos</b>.</li>
+  <li>Sem nenhuma atividade por <b>10 minutos</b> (e sem alterações pendentes), a edição é liberada sozinha.</li>
+  <li>Se o app for fechado sem liberar, a trava <b>expira em 3 minutos</b>.</li>
+  <li>O OneDrive leva alguns segundos para sincronizar o arquivo da trava. Espere a barra se atualizar antes de começar a editar.</li>
+</ul>
+<div class="box"><b class="t">O nome na trava não é senha</b>Ele serve só para os colegas saberem quem está editando. O app não tem login. O controle de acesso real é a permissão na pasta do SharePoint.</div>
+
+<h2 class="pb">5. As telas do app</h2>
+<h3>5.1 Dashboard</h3>
+<p>Quatro visões prontas, todas editáveis: <b>Visão executiva</b>, <b>Rentabilidade</b>, <b>Time e horas</b> e <b>Contratos</b>. Filtre por ano, período (mês, trimestre, acumulado do ano ou ano) e por cliente, projeto, iStudio ou profissional. Clicar numa barra ou linha aplica o filtro. Os KPIs comparam com o período anterior.</p>
+<table>
+  <tr><th style="width:30%">Widget</th><th>Para que serve</th></tr>
+  <tr><td>Indicador (KPI)</td><td>Valor do período, variação e minigráfico do ano.</td></tr>
+  <tr><td>Evolução mensal</td><td>Mês a mês, empilhado por dimensão ou acumulado. Meses futuros aparecem como previstos.</td></tr>
+  <tr><td>Ranking / Composição</td><td>Top N por dimensão, com "Outros"; participação de cada item no total.</td></tr>
+  <tr><td>Tabela dinâmica / Mapa de calor</td><td>Linhas por dimensão com colunas escolhidas; dimensão × mês (ex.: margem por cliente no ano).</td></tr>
+  <tr><td>Cascata do resultado</td><td>Bruto → impostos → líquido → custo → resultado.</td></tr>
+  <tr><td>Horas provisionadas × executadas</td><td>Aderência das horas por mês.</td></tr>
+  <tr><td>Pontos de atenção</td><td>Margem negativa ou baixa, contratos estourados ou perto do fim, alocação após o fim do contrato, horas zeradas.</td></tr>
+  <tr><td>Consumo de contratos / Contratos por status</td><td>Assinado × consumido × saldo; quantidade e valor por status.</td></tr>
+  <tr><td>Provisão do mês / Margem por trimestre</td><td>Cliente → projeto no mês de referência; líquido e margem por trimestre.</td></tr>
+</table>
+<p class="small">Dica: monte o seu layout e use <b>Exportar layout</b> para compartilhar o <code>.json</code> com o time.</p>
+
+<h3>5.2 Projetos</h3>
+<ul>
+  <li><b>+ Novo projeto</b>: escolha o cliente e o nome. Se o cliente ainda não tem aba de billing, use <b>Criar aba de billing</b> (gera a aba <code>BL_&lt;cliente&gt;</code> a partir do <code>BL_Template</code>).</li>
+  <li><b>Contratos</b>: proposta, ano fiscal, chance de conversão, datas, valor assinado e <b>Funding</b>. O Funding define a tributação (veja a seção 6).</li>
+  <li><b>+ Adicionar profissional</b>: mês, iStudio, papel, senioridade e horas. O ratecard (R$/h) e o custo vêm do Config, aba <i>Perfis</i>. Se o iStudio não tiver tabela de perfis, informe os valores à mão.</li>
+  <li><b>Replicar mês</b>: copia todas as alocações de um mês para outro. Para meses futuros, deixe marcado "Horas executadas = horas provisionadas".</li>
+  <li><b>Excluir projeto</b> remove também os contratos e as linhas de alocação dele. O app mostra quantos itens serão removidos antes de confirmar.</li>
+</ul>
+
+<h3>5.3 Ajuste de horas</h3>
+<ol class="steps">
+  <li>Escolha o mês e, se quiser, o cliente ou um nome na busca.</li>
+  <li>Altere as horas executadas. A diferença em relação ao provisionado, o valor bruto e a margem se atualizam na hora.</li>
+  <li>Informe o <b>motivo</b>: ele é gravado na coluna <i>Obs</i> da planilha.</li>
+  <li>Clique em <b>Aplicar ajustes</b>, ou em <b>Descartar</b> para desfazer o rascunho.</li>
+</ol>
+
+<h3>5.4 Gerar planilha</h3>
+<p>Baixa uma cópia atualizada do Database. Útil quando o app foi aberto por envio de arquivo, e não pela pasta conectada.</p>
+
+<h2>6. Regras de negócio e cálculos</h2>
+<div class="box"><b class="t">Config.xlsx é a fonte única</b>Impostos, perfis e ratecards, dias úteis e listas (status, PowerHouse, BP por cliente) vêm do <b>Config.xlsx</b>. A aba <code>1. Config</code> do Database é só um espelho técnico que o app atualiza para as fórmulas das abas <code>BL_</code> continuarem funcionando no Excel. <b>Altere regras no Config, nunca no espelho.</b></div>
+<h3>Cálculo por linha de alocação</h3>
+<pre>Valor bruto     = horas executadas × R$/h × fator
+Impostos        = valor bruto × (PIS + COFINS + INSS + ISSQN)    → zero se o projeto for Isento
+Valor líquido   = valor bruto − impostos
+Custo           = horas executadas × custo/h
+Resultado       = valor líquido − custo
+Margem bruta MB = resultado ÷ valor líquido</pre>
+<p class="small">Se a planilha tiver um valor bruto digitado à mão (sem fórmula e diferente de horas × R$/h), o app respeita esse valor. O <i>fator</i> vem de fórmulas do tipo <code>M×J×fator</code> já existentes na linha.</p>
+<h3>Tributação</h3>
+<ul>
+  <li>Vem do campo <b>Funding</b> do contrato: <b>Sim = Isento</b>; qualquer outro valor = Tributado.</li>
+  <li>Projeto sem contrato é <b>Tributado</b>.</li>
+  <li>Se o mesmo projeto tiver contratos com Funding diferentes, vale o primeiro, e o app sinaliza o conflito. Corrija os contratos.</li>
+</ul>
+<h3>Faixas de margem</h3>
+<table style="width:70%">
+  <tr><th>Margem bruta</th><th>Faixa</th></tr>
+  <tr><td>abaixo de 20%</td><td><span class="chip c-r">Vermelho</span></td></tr>
+  <tr><td>de 20% a 28,9%</td><td><span class="chip c-y">Amarelo</span></td></tr>
+  <tr><td>29% ou mais</td><td><span class="chip c-g">Verde</span></td></tr>
+</table>
+
+<h2 class="pb">7. Gravação, backups e conflitos</h2>
+<ul>
+  <li><b>Gravar automaticamente</b> (ligado por padrão): cada alteração é gravada no Database e no Config. Desligado, as alterações se acumulam e você clica em <b>Salvar agora</b>. O indicador no topo mostra quantas alterações faltam gravar.</li>
+  <li><b>Backup</b>: na primeira gravação de cada sessão, o app copia os dois arquivos para <code>_backups_safeharbor/</code> com data e hora no nome (ex.: <code>Database_backup_20261120_1430.xlsx</code>).</li>
+  <li><b>Limpeza</b>: backups com mais de <b>3 dias</b> são apagados automaticamente. O backup mais recente de cada arquivo é sempre mantido, mesmo antigo.</li>
+  <li><b>Recálculo no Excel</b>: o app marca as planilhas para recalcular ao abrir. É normal o Excel recalcular (e pedir para salvar) na primeira abertura depois de uma gravação.</li>
+</ul>
+<h3>Quando alguém alterou o arquivo por fora</h3>
+<p>Se o Database ou o Config mudou depois que o app leu (alguém editou no Excel, por exemplo), o app não grava por cima sem perguntar:</p>
+<table>
+  <tr><th style="width:28%">Opção</th><th>Efeito</th></tr>
+  <tr><td><b>Recarregar do arquivo</b></td><td>Traz a versão atual e <b>descarta</b> as suas alterações não gravadas.</td></tr>
+  <tr><td><b>Sobrescrever</b></td><td>Grava a versão do app por cima. Antes, faz backup do arquivo atual (se ainda não houver backup nesta sessão).</td></tr>
+  <tr><td>Decidir depois</td><td>Fecha o aviso sem gravar nada.</td></tr>
+</table>
+<p>Se itens gravados por você sumirem da planilha (outra pessoa sobrescreveu), o app avisa e oferece <b>recuperar os itens perdidos</b>.</p>
+<div class="box warn"><b class="t">Na dúvida, recarregue</b>Sobrescrever apaga o que a outra pessoa fez no arquivo. Só use quando tiver certeza de que a versão do app é a correta.</div>
+
+<h2>8. Boas práticas e o que evitar</h2>
+<table>
+  <tr><th style="width:50%">Faça</th><th>Evite</th></tr>
+  <tr><td>Clique em <b>Liberar edição</b> ao terminar.</td><td>Deixar o app em modo edição e sair para uma reunião.</td></tr>
+  <tr><td>Feche o Excel antes de editar no app.</td><td>Editar o Database no Excel e no app ao mesmo tempo.</td></tr>
+  <tr><td>Altere impostos, perfis e ratecards no <b>Config.xlsx</b>.</td><td>Editar a aba <code>1. Config</code> do Database.</td></tr>
+  <tr><td>Informe o motivo em todo ajuste de horas.</td><td>Renomear abas <code>BL_</code>, tabelas ou cabeçalhos de coluna (o app lê pelos nomes).</td></tr>
+  <tr><td>Espere o OneDrive sincronizar antes de editar.</td><td>Apagar <code>_safeharbor.lock</code> ou a pasta de backups à mão.</td></tr>
+  <tr><td>Use sempre a versão mais recente do HTML.</td><td><b>Enviar planilhas, backups ou prints com dados reais para o GitHub</b> (o repositório é público).</td></tr>
+</table>
+
+<h2>9. Solução de problemas</h2>
+<table>
+  <tr><th style="width:38%">Sintoma</th><th>Causa provável e solução</th></tr>
+  <tr><td>Não aparece o botão "Conectar pasta"</td><td>Navegador sem suporte. Use Chrome ou Edge para computador.</td></tr>
+  <tr><td>"Database ou Config está bloqueado"</td><td>Arquivo aberto no Excel (seu ou de um colega, via OneDrive). Feche e tente de novo.</td></tr>
+  <tr><td>"Fulano está editando" mas a pessoa já saiu</td><td>A trava expira em 3 minutos sem sinal. Clique em <b>Atualizar</b> e depois em <b>Editar</b>.</td></tr>
+  <tr><td>A edição foi liberada sozinha</td><td>10 minutos sem atividade. Clique em <b>Editar</b> para retomar.</td></tr>
+  <tr><td>"Fulano assumiu a edição"</td><td>Seu computador suspendeu e a trava expirou. Se tiver alterações não gravadas, peça a edição de volta e grave.</td></tr>
+  <tr><td>Aviso de conflito ao gravar</td><td>O arquivo mudou fora do app. Veja a seção 7.</td></tr>
+  <tr><td>Ratecard não é preenchido</td><td>O iStudio, papel ou senioridade não existe na aba <i>Perfis</i> do Config. Cadastre lá ou informe à mão.</td></tr>
+  <tr><td>Precisa desfazer uma gravação</td><td>Copie o backup de <code>_backups_safeharbor/</code> por cima do arquivo (com o app e o Excel fechados). Os backups duram 3 dias.</td></tr>
+</table>
+
+<h2 class="pb">10. Para quem desenvolve</h2>
+<h3>Estrutura</h3>
+<pre>src/template.html   Interface (HTML, CSS e JS: telas, dashboard, trava, backups)   ~2.360 linhas
+src/core.js         Motor da planilha: leitura e gravação do XLSX, fórmulas, cálculos ~760 linhas
+assets/airr-logo.svg
+build.py            Monta dist/ a partir de src/ (troca /*__CORE__*/ pelo core.js)
+dist/index.html                 JSZip via CDN
+dist/SafeHarbor_Financeiro.html JSZip embutido (uso local, offline)
+tests/*.py          6 testes de ponta a ponta (Playwright, Python)</pre>
+<h3>Fluxo de trabalho</h3>
+<pre>npm install          # instala o JSZip 3.10.1
+python3 build.py     # gera os dois arquivos de dist/
+npm run serve        # serve dist/ em http://localhost:8765</pre>
+<ul>
+  <li><b>Edite só <code>src/</code></b> e rode o build. Nunca edite <code>dist/</code> à mão.</li>
+  <li>Os testes precisam de cópias das planilhas em <code>tests/fixtures/</code> (<code>Database.xlsx</code>, <code>Config.xlsx</code> e <code>Config_alt.xlsx</code> com ISSQN de 5%). Esses arquivos <b>não</b> vão para o Git.</li>
+  <li>Testes: <code>fin_test</code> (fluxo completo), <code>lock_test</code> (trava entre dois usuários), <code>dash_test</code> (dashboard), <code>pf_test</code> (perfis e ratecard), <code>mb_test</code> (faixas de margem), <code>prune_test</code> (limpeza de backups).</li>
+  <li>Faixas de margem: constantes <code>MB_RED</code> e <code>MB_GREEN</code> em <code>src/template.html</code>.</li>
+</ul>
+<h3>Como o motor grava sem estragar o Excel</h3>
+<p>O <code>core.js</code> abre o <code>.xlsx</code> como ZIP e edita o XML das abas diretamente. Ele preserva estilos e fórmulas existentes (deslocando referências relativas quando uma linha muda de posição), cria abas <code>BL_</code> a partir do template, remove o <code>calcChain.xml</code> e liga o <code>fullCalcOnLoad</code> para o Excel recalcular ao abrir. No Config, reescreve só as abas <i>Projetos</i>, <i>Clientes x Tabelas</i> e <i>BP por Cliente</i> e remove vínculos externos com a planilha antiga.</p>
+
+<h2>11. Análise técnica: pontos fortes, riscos e recomendações</h2>
+<h3>Pontos fortes</h3>
+<ul>
+  <li><b>Privacidade por desenho:</b> sem servidor e sem banco de dados; os dados ficam no SharePoint e no computador de quem usa.</li>
+  <li><b>Compatível com o Excel:</b> gravação cirúrgica no XML, preservando fórmulas, estilos e tabelas. O time pode continuar abrindo a planilha normalmente.</li>
+  <li><b>Proteções para uso em equipe:</b> trava com pedido de edição, liberação por inatividade, backup por sessão, detecção de mudança externa e recuperação de itens perdidos.</li>
+  <li><b>Distribuição simples:</b> um único HTML, sem instalação. A versão local funciona sem acesso ao CDN.</li>
+  <li><b>Higiene do repositório:</b> o <code>.gitignore</code> bloqueia <code>.xlsx</code>, <code>.csv</code>, <code>.png</code>, backups, a trava e as fixtures de teste.</li>
+  <li><b>Build consistente:</b> o <code>dist/index.html</code> versionado corresponde exatamente a <code>src/template.html</code> + <code>src/core.js</code> (313.809 bytes nos dois casos).</li>
+</ul>
+<h3>Riscos e pontos de atenção</h3>
+<table>
+  <tr><th style="width:9%">Nível</th><th style="width:31%">Ponto</th><th>Detalhe e recomendação</th></tr>
+  <tr><td class="sev-a">Alto</td><td>Trava depende da sincronização do OneDrive</td><td>A trava grava o arquivo, espera 1,5 s e relê. Como o OneDrive leva segundos para sincronizar entre máquinas, duas pessoas podem achar que têm a trava ao mesmo tempo. A detecção de mudança externa reduz o dano, mas não elimina. <b>Recomendação:</b> combinar no time quem edita (ex.: pelo chat) e esperar a barra atualizar antes de editar.</td></tr>
+  <tr><td class="sev-a">Alto</td><td>Backups só por 3 dias</td><td>Erros percebidos depois de 3 dias só são recuperáveis pelo histórico de versões do SharePoint. <b>Recomendação:</b> confirmar que o versionamento do SharePoint está ativo na pasta Financeiro e ensinar o time a usá-lo.</td></tr>
+  <tr><td class="sev-m">Médio</td><td>Sem controle de acesso no app</td><td>O cadastro de pessoas e perfis existe no código, mas está desligado (<code>peopleOn()</code> retorna <code>false</code>): todos acessam como administrador. O controle real é a permissão na pasta. <b>Recomendação:</b> restringir a pasta Financeiro a quem pode editar e dar acesso só de leitura aos demais.</td></tr>
+  <tr><td class="sev-m">Médio</td><td>Dependência da estrutura da planilha</td><td>O motor localiza abas, tabelas e colunas pelo nome (<code>BL_*</code>, <code>2. Propostas</code>, <code>Perfis</code>, <code>Impostos</code>…). Renomear quebra a leitura. <b>Recomendação:</b> documentar a estrutura obrigatória e congelar mudanças de layout sem passar pelo time de desenvolvimento.</td></tr>
+  <tr><td class="sev-m">Médio</td><td>Testes dependem de dados reais</td><td>Os 6 testes precisam de cópias das planilhas reais, fora do Git, e não há CI. Ninguém consegue rodá-los sem pedir os arquivos. <b>Recomendação:</b> criar planilhas sintéticas anonimizadas para os testes e um workflow de CI.</td></tr>
+  <tr><td class="sev-b">Baixo</td><td>Código concentrado</td><td><code>template.html</code> tem cerca de 2.360 linhas com linhas muito longas, o que dificulta revisão e manutenção. <b>Recomendação:</b> separar por módulos (trava, backups, dashboard, telas) quando houver novas funcionalidades.</td></tr>
+  <tr><td class="sev-b">Baixo</td><td>Fontes e CDN externos</td><td>A interface carrega fontes do Google Fonts e o <code>index.html</code> carrega o JSZip do cdnjs. Só código e fontes trafegam, sem dados. Offline, a fonte cai para a padrão do sistema.</td></tr>
+  <tr><td class="sev-b">Baixo</td><td>Arquivos gerados versionados</td><td><code>dist/</code> está no Git e pode ficar desatualizado em relação a <code>src/</code>. Hoje está em dia. <b>Recomendação:</b> gerar o <code>dist/</code> no CI ou checar a sincronia antes do merge.</td></tr>
+</table>
+
+<h2>12. Estado do repositório</h2>
+<table>
+  <tr><th style="width:30%">Item</th><th>Situação</th></tr>
+  <tr><td>Branch <code>main</code></td><td>Só o commit inicial com um <code>README.md</code> de uma linha.</td></tr>
+  <tr><td>Branch <code>app-inicial</code></td><td>Todo o app (commit <code>7c1bf87</code>, "Adiciona o app Safe Harbor Financeiro"), 17 arquivos.</td></tr>
+  <tr><td>Pull request nº 1</td><td>Aberto de <code>app-inicial</code> para <code>main</code>, ainda não mesclado. Até o merge, quem baixar a <code>main</code> não recebe o app.</td></tr>
+  <tr><td>Visibilidade</td><td><b>Público.</b> Nunca versionar planilhas, backups ou capturas de tela com dados.</td></tr>
+</table>
+<div class="box good"><b class="t">Próximos passos sugeridos</b>
+<ol style="margin:4px 0 0">
+  <li>Revisar e mesclar o PR nº 1 para a <code>main</code>.</li>
+  <li>Publicar o <code>SafeHarbor_Financeiro.html</code> num local fixo da pasta Financeiro para o time sempre usar a mesma versão.</li>
+  <li>Confirmar o versionamento do SharePoint e as permissões da pasta.</li>
+  <li>Criar fixtures sintéticas e um CI para os testes.</li>
+</ol></div>
+
+</body>
+</html>

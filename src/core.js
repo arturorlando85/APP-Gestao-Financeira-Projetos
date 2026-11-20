@@ -550,7 +550,7 @@
           else if (h === 'Valor Usado') {
             const E = CL('Projeto') + r;
             const f = cl && cl.table ? `SUMIF(${cl.table}[Projeto],TRIM(${E}),${cl.table}[Valor Bruto])` : allTables.map(tb => `SUMIF(${tb}[Projeto],TRIM(${E}),${tb}[Valor Bruto])`).join('+');
-            xml = cellXml(ref, s, null, { f, v: usado });
+            xml = f ? cellXml(ref, s, null, { f, v: usado }) : cellXml(ref, s, 0); // sem nenhuma aba BL ainda: valor 0 (fórmula vazia corrompe o arquivo)
           } else if (h === 'Delta') xml = cellXml(ref, s, null, { f: `${CL('Valor Assinado')}${r}-${CL('Valor Usado')}${r}`, v: Lv - usado });
           else if (PROP_FIELDS.includes(h) || h === 'Funding') xml = cellXml(ref, s, p.fields[h], { date: h === 'Start Date' || h === 'End Date' });
           else xml = oc ? keepCellXml(oc, ref, dr) : cellXml(ref, s, null);

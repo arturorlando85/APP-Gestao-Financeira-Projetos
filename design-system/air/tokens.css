@@ -1,0 +1,87 @@
+/* AI/R — Agentic AI Engineering · tokens em CSS
+   Gerado a partir de tokens.json (fonte da verdade). Medidas para canvas de slide 1920×1080.
+   Tema claro em :root; tema escuro com [data-theme="dark"] ou a classe .air-dark (bundle.css). */
+
+:root {
+  /* ---------- cor: rampa de cinzas ---------- */
+  --gray-050: #e9e9e9;
+  --gray-100: #d9d9d9;
+  --gray-150: #d3d3d3;
+  --gray-200: #bfbfbf;
+  --gray-250: #bdbdbd;
+  --gray-300: #a6a6a6;
+  --gray-400: #7f7f7f;
+  --gray-450: #646464;
+  --gray-500: #595959;
+  --gray-600: #404040;
+  --gray-650: #383838;
+  --gray-700: #262626;
+  --gray-750: #222222;
+
+  /* ---------- cor: semânticas (tema claro) ---------- */
+  --surface: #ffffff;
+  --ink: #000000;
+  --rule: #000000;
+  --logo-tagline: #666666;
+  --label-internal: #767171;
+  --link: #467886;
+  --surface-graphite: var(--gray-600);
+  --surface-carbon: var(--gray-750);
+  --card: var(--gray-150);
+  --card-alt: var(--gray-250);
+  --card-ink: #000000;
+
+  /* ---------- tipografia: famílias ---------- */
+  --font-display: "Neue Haas Grotesk Display Pro", "NeueHaasDisplay", "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, Menlo, monospace;
+
+  /* ---------- espaçamento ---------- */
+  --space-margin-x: 136px;
+  --space-logo-right: 106px;
+  --space-rule-y: 90px;
+  --space-rule-x: 640px;
+  --space-title-top: 224px;
+  --space-card-pad: 50px;
+  --space-tag-pad: 30px;
+  --space-card-gap: 20px;
+  --space-tag-gap: 14px;
+  --space-tile-gap: 10px;
+
+  /* ---------- forma ---------- */
+  --radius-none: 0;
+  --notch-tag: 19px;
+  --notch-header: 15px;
+}
+
+[data-theme="dark"] {
+  --surface: #000000;
+  --ink: #ffffff;
+  --rule: #ffffff;
+  --logo-tagline: #ffffff;
+  --card: var(--gray-450);
+  --card-alt: var(--gray-650);
+  --card-ink: #ffffff;
+}
+
+/* ---------- tipografia: estilos (classes usadas pelos componentes) ---------- */
+.title-xl   { font-family: var(--font-display); font-size: 88px; line-height: 1.18; font-weight: 200; }
+.title-lg   { font-family: var(--font-display); font-size: 80px; line-height: 1.08; font-weight: 200; }
+.title-md   { font-family: var(--font-display); font-size: 64px; line-height: 1.2;  font-weight: 200; }
+.title-sm   { font-family: var(--font-display); font-size: 56px; line-height: 1.2;  font-weight: 200; }
+.subtitle   { font-family: var(--font-display); font-size: 48px; line-height: 1.2;  font-weight: 200; }
+.lead       { font-family: var(--font-display); font-size: 40px; line-height: 1.2;  font-weight: 200; }
+
+.body       { font-family: var(--font-display); font-size: 32px; line-height: 1.25; font-weight: 200; }
+.body-sm    { font-family: var(--font-display); font-size: 28px; line-height: 1.2;  font-weight: 200; }
+.caption    { font-family: var(--font-display); font-size: 24px; line-height: 1.8;  font-weight: 200; }
+.label-bold { font-family: var(--font-display); font-size: 28px; line-height: 1.2;  font-weight: 700; }
+
+.mono-hero   { font-family: var(--font-mono); font-size: 88px; line-height: 1.1;  font-weight: 400; }
+.mono-figure { font-family: var(--font-mono); font-size: 56px; line-height: 1.15; font-weight: 400; }
+.mono-number { font-family: var(--font-mono); font-size: 53px; line-height: 1.15; font-weight: 400; }
+.mono-title  { font-family: var(--font-mono); font-size: 48px; line-height: 1.2;  font-weight: 400; }
+.mono-lead   { font-family: var(--font-mono); font-size: 40px; line-height: 1.3;  font-weight: 400; }
+.mono-body   { font-family: var(--font-mono); font-size: 32px; line-height: 1.3;  font-weight: 400; }
+.mono-tag    { font-family: var(--font-mono); font-size: 28px; line-height: 1.3;  font-weight: 400; }
+.mono-small  { font-family: var(--font-mono); font-size: 24px; line-height: 1.3;  font-weight: 400; }
+.mono-label  { font-family: var(--font-mono); font-size: 28px; line-height: 1.3;  font-weight: 700; }

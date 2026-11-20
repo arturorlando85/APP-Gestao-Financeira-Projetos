@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Gestão Financeira de Projetos · Guia do time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Design System AI/R — Agentic AI Engineering, adaptado para A4 (tokens de design-system/air/tokens.json) */
+:root {
+  --gray-050:#e9e9e9; --gray-100:#d9d9d9; --gray-150:#d3d3d3; --gray-200:#bfbfbf; --gray-250:#bdbdbd; --gray-300:#a6a6a6;
+  --gray-400:#7f7f7f; --gray-450:#646464; --gray-500:#595959; --gray-600:#404040; --gray-650:#383838; --gray-700:#262626; --gray-750:#222222;
+  --ink:#000; --surface:#fff; --rule:#000; --label-internal:#767171; --link:#467886;
+  --display:"Neue Haas Grotesk Display Pro","NeueHaasDisplay","Inter Tight","Helvetica Neue",Arial,sans-serif;
+  --mono:"Roboto Mono",ui-monospace,Menlo,monospace;
+  --notch-tag:7px; --notch-header:6px;
+  --arrow:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2022%2024%22%3E%3Cpath%20d%3D%22M5.68%204.01L4.43%204.01L4.43%206.61L5.68%206.61L15.07%206.61L3.91%2018.20L3.02%2019.12L4.80%2020.97L5.68%2020.04L16.84%208.45L16.84%2018.20L16.84%2019.51L19.35%2019.51L19.35%2018.20L19.35%204.01L5.68%204.01%22%20fill%3D%22%23000%22%20fill-rule%3D%22evenodd%22/%3E%3C/svg%3E");
+}
+@page { size: A4; margin: 0; }
+.page { width: 210mm; height: 297mm; padding: 17mm 18mm 18mm; position: relative; overflow: hidden; break-after: page; counter-increment: pg; }
+.page:last-child { break-after: auto; }
+.ptop, .pfoot { position: absolute; left: 18mm; right: 18mm; display: flex; justify-content: space-between; font-size: 7pt; }
+.ptop { top: 7mm; } .pfoot { bottom: 8mm; }
+.ptop span:first-child, .pfoot span:last-child { font-weight: 300; color: var(--label-internal); }
+.ptop span:last-child { font-family: var(--mono); font-size: 6.5pt; color: var(--gray-500); }
+.pn { font-family: var(--mono); } .pn::after { content: counter(pg, decimal-leading-zero); }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; }
+body { font-family: var(--display); font-weight: 300; color: var(--ink); font-size: 9.6pt; line-height: 1.5; }
+b, strong { font-weight: 700; }
+p { margin: 0 0 7px; }
+ul, ol { margin: 4px 0 8px; padding-left: 0; list-style: none; }
+li { margin: 3px 0; padding-left: 16px; position: relative; }
+ul > li::before { content: ""; position: absolute; left: 0; top: .42em; width: 8px; height: 9px; background: var(--ink); -webkit-mask: var(--arrow) center/contain no-repeat; mask: var(--arrow) center/contain no-repeat; }
+ol { counter-reset: n; } ol > li { counter-increment: n; padding-left: 26px; }
+ol > li::before { content: counter(n, decimal-leading-zero); position: absolute; left: 0; top: 0; font-family: var(--mono); font-size: 8pt; font-weight: 700; }
+code { font-family: var(--mono); font-size: 8pt; background: var(--gray-050); padding: 0 3px; }
+
+/* capa */
+.cover { padding: 0; background: var(--gray-750); color: #fff; }
+.cover .band { position: absolute; left: 0; right: 0; bottom: 0; height: 92mm; background: #fff; color: #000; padding: 12mm 18mm; }
+.cover .logo { position: absolute; top: 14mm; right: 18mm; width: 34mm; }
+.cover .lbl { position: absolute; top: 18mm; left: 18mm; font-family: var(--mono); font-size: 8pt; letter-spacing: .5px; }
+.cover .rule { position: absolute; top: 20.2mm; left: 70mm; right: 58mm; height: .5pt; background: #fff; }
+.cover h1 { position: absolute; left: 18mm; top: 62mm; right: 18mm; margin: 0; font-weight: 200; font-size: 40pt; line-height: 1.08; letter-spacing: -.5px; }
+.cover .sub { position: absolute; left: 18mm; top: 128mm; right: 40mm; font-weight: 200; font-size: 14pt; line-height: 1.3; color: var(--gray-150); }
+.cover .bigarrow { position: absolute; right: -14mm; top: 120mm; width: 110mm; height: 120mm; background: var(--gray-650); -webkit-mask: var(--arrow) center/contain no-repeat; mask: var(--arrow) center/contain no-repeat; }
+.cover .int { position: absolute; font-size: 7pt; color: var(--label-internal); }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { display: inline-flex; align-items: center; gap: 7px; min-height: 24px; padding: 0 11px; background: var(--gray-150); color: #000; font-family: var(--mono); font-size: 8pt;
+  clip-path: polygon(0 0, calc(100% - var(--notch-tag)) 0, 100% var(--notch-tag), 100% 100%, 0 100%); }
+.tag::before { content: ""; width: 8px; height: 9px; background: currentColor; -webkit-mask: var(--arrow) center/contain no-repeat; mask: var(--arrow) center/contain no-repeat; }
+.cover .meta { margin-top: 10mm; display: grid; grid-template-columns: max-content 1fr; column-gap: 8mm; row-gap: 2mm; font-family: var(--mono); font-size: 7.5pt; }
+.cover .meta b { font-weight: 700; }
+
+/* cabeçalho de seção (SlideHeader) */
+
+.sec.cont { break-before: auto; margin-top: 9mm; }
+.shead { display: flex; align-items: center; gap: 5mm; margin-bottom: 7mm; }
+.shead .lbl { font-family: var(--mono); font-size: 8pt; white-space: nowrap; }
+.shead .rule { flex: 1; height: .5pt; background: var(--rule); }
+.shead img { width: 22mm; }
+h2 { font-weight: 200; font-size: 24pt; line-height: 1.12; margin: 0 0 4mm; letter-spacing: -.3px; break-after: avoid; }
+h3 { font-family: var(--mono); font-weight: 700; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .4px; margin: 6mm 0 2.5mm; break-after: avoid; display: flex; align-items: center; gap: 6px; }
+h3::before { content: ""; width: 9px; height: 10px; background: var(--ink); -webkit-mask: var(--arrow) center/contain no-repeat; mask: var(--arrow) center/contain no-repeat; }
+.lead { font-weight: 200; font-size: 12.5pt; line-height: 1.35; margin-bottom: 5mm; }
+
+/* tabela com cabeçalho de canto cortado (NotchTable) */
+table { width: 100%; border-collapse: separate; border-spacing: 0 2px; margin: 2mm 0 4mm; font-size: 8.6pt; break-inside: avoid; }
+th { text-align: left; font-family: var(--mono); font-weight: 700; font-size: 7.4pt; text-transform: uppercase; letter-spacing: .3px; color: #fff; background: var(--gray-400); padding: 6px 9px; }
+th:last-child { clip-path: polygon(0 0, calc(100% - var(--notch-header)) 0, 100% var(--notch-header), 100% 100%, 0 100%); }
+td { background: var(--gray-050); padding: 6px 9px; vertical-align: top; }
+td.k { font-family: var(--mono); font-size: 8pt; white-space: nowrap; }
+tr.dark td { background: var(--gray-150); }
+
+/* cards em rampa de cinzas */
+.cards { display: grid; gap: 3px; margin: 3mm 0 5mm; break-inside: avoid; }
+.cards.c3 { grid-template-columns: repeat(3, 1fr); } .cards.c2 { grid-template-columns: repeat(2, 1fr); } .cards.c4 { grid-template-columns: repeat(4, 1fr); }
+.card { padding: 5mm 5mm; min-height: 26mm; display: flex; flex-direction: column; gap: 3mm; }
+.card .t { font-family: var(--mono); font-size: 8pt; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.card .t::before { content: ""; width: 8px; height: 9px; background: currentColor; -webkit-mask: var(--arrow) center/contain no-repeat; mask: var(--arrow) center/contain no-repeat; }
+.card p { margin: 0; font-size: 8.6pt; line-height: 1.4; }
+.g050 { background: var(--gray-050); } .g150 { background: var(--gray-150); } .g250 { background: var(--gray-250); } .g300 { background: var(--gray-300); }
+.g450 { background: var(--gray-450); color: #fff; } .g500 { background: var(--gray-500); color: #fff; } .g600 { background: var(--gray-600); color: #fff; } .g700 { background: var(--gray-700); color: #fff; }
+
+/* destaque e números (StatBlock) */
+.note { background: var(--gray-050); padding: 4mm 5mm; margin: 3mm 0 5mm; break-inside: avoid; border-left: 2.5pt solid var(--ink); }
+.note.dark { background: var(--gray-750); color: #fff; border-left-color: #fff; }
+.note .t { font-family: var(--mono); font-size: 7.6pt; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 1.5mm; letter-spacing: .3px; }
+.stats { display: flex; gap: 10mm; margin: 3mm 0 5mm; }
+.stat .n { font-family: var(--mono); font-size: 20pt; line-height: 1.1; }
+.stat .c { font-size: 8pt; }
+figure { margin: 3mm 0 5mm; break-inside: avoid; }
+figure img { width: 100%; display: block; border: .5pt solid var(--gray-200); }
+figcaption { font-family: var(--mono); font-size: 7pt; color: var(--gray-500); margin-top: 1.5mm; }
+pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: var(--gray-750); color: #fff; padding: 4mm 5mm; margin: 2mm 0 5mm; white-space: pre-wrap; break-inside: avoid; }
+.sw { display: inline-block; width: 9px; height: 9px; margin-right: 5px; vertical-align: -1px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 3mm 0 5mm; }
+.steps > div { padding: 4mm; min-height: 30mm; }
+.steps .y { font-family: var(--mono); font-size: 14pt; display: block; margin-bottom: 2mm; }
+.steps p { margin: 0; font-size: 8.4pt; line-height: 1.35; }
+.bar li { padding-left: 12px; } .bar li::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 2pt; height: auto; background: var(--ink); -webkit-mask: none; mask: none; }
+.closing { background: var(--gray-750); color: #fff; padding: 26mm 18mm; }
+.closing h2 { font-size: 30pt; max-width: 140mm; }
+.closing .contact { position: absolute; left: 18mm; bottom: 28mm; font-family: var(--mono); font-size: 8pt; line-height: 1.9; }
+.closing img { position: absolute; right: 18mm; top: 22mm; width: 30mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ CAPA ============ -->
+<section class="page cover">
+  <span class="int" style="top:6mm;left:6mm">Internal</span>
+  <span class="lbl">Gestão Financeira de Projetos</span><span class="rule"></span>
+  <img class="logo" src="img/airr-logo-white.svg" alt="AI/R Agentic AI Engineering">
+  <h1>Do zero ao primeiro projeto: o guia do time para controlar a parte financeira da POD</h1>
+  <p class="sub">Como preparar a pasta Financeiro, configurar regras e usar o app para registrar contratos, alocações e horas.</p>
+  <span class="bigarrow"></span>
+  <div class="band">
+    <div class="tags">
+      <span class="tag">App em HTML</span><span class="tag">Database.xlsx</span><span class="tag">Config.xlsx</span><span class="tag">Chrome ou Edge</span><span class="tag">OneDrive / SharePoint</span>
+    </div>
+    <div class="meta">
+      <b>PARA</b><span>Novas PODs: Operations, Business e Delivery Managers e Delivery Leaders</span>
+      <b>VERSÃO</b><span>1.0 · novembro de 2026</span>
+      <b>PACOTE</b><span>Gestao_Financeira_Projetos.html · Financeiro/Database.xlsx · Financeiro/Config.xlsx</span>
+    </div>
+    <span class="int" style="right:6mm;bottom:6mm">Internal</span>
+  </div>
+</section>
+
+<!-- ============ 1. VISÃO GERAL ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">01 / Visão geral</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Um app no navegador, duas planilhas como base e nenhum servidor</h2>
+  <p class="lead">O app lê e grava direto no Database.xlsx e no Config.xlsx da pasta Financeiro sincronizada pelo OneDrive. Tudo roda no seu navegador: nenhum dado financeiro sai da máquina.</p>
+  <div class="cards c3">
+    <div class="card g050"><span class="t">Gestao_Financeira_Projetos.html</span><p>O app. Um único arquivo, sem instalação. Abra no Chrome ou no Edge para computador.</p></div>
+    <div class="card g150"><span class="t">Database.xlsx</span><p>Os dados: contratos (aba <b>2. Propostas</b>) e o billing de cada cliente (abas <b>BL_</b>). Começa vazio.</p></div>
+    <div class="card g300"><span class="t">Config.xlsx</span><p>As regras: impostos, perfis e ratecards, dias úteis e listas. É a fonte única de regras do app.</p></div>
+  </div>
+  <h3>O que o app faz</h3>
+  <table>
+    <tr><th style="width:28%">Área</th><th>Para que serve</th></tr>
+    <tr><td class="k">Dashboard</td><td>4 visões prontas (executiva, rentabilidade, time e horas, contratos), filtros por período e dimensão e pontos de atenção automáticos. O layout pode ser personalizado.</td></tr>
+    <tr><td class="k">Projetos</td><td>Cria clientes, projetos e contratos. Cada cliente novo ganha a sua aba de billing <code>BL_&lt;cliente&gt;</code>.</td></tr>
+    <tr><td class="k">Time e alocação</td><td>Alocação mensal por profissional, com ratecard e custo sugeridos pela aba Perfis do Config.</td></tr>
+    <tr><td class="k">Ajuste de horas</td><td>Ajuste mensal das horas executadas, com o motivo gravado na coluna Obs.</td></tr>
+    <tr><td class="k">Uso em equipe</td><td>Trava de edição (uma pessoa edita por vez), gravação automática, backups e detecção de alterações feitas por fora.</td></tr>
+  </table>
+  <h3>Quem faz o quê</h3>
+  <div class="cards c4">
+    <div class="card g150"><span class="t">Ops / Business Mgr</span><p>Prepara a pasta e o Config, cria clientes e mantém regras.</p></div>
+    <div class="card g300"><span class="t">Delivery Manager</span><p>Cria projetos e contratos dos seus clientes.</p></div>
+    <div class="card g500"><span class="t">Delivery Leader</span><p>Mantém time, alocações e horas dos seus projetos.</p></div>
+    <div class="card g700"><span class="t">Todos</span><p>Consultam o dashboard em modo leitura.</p></div>
+  </div>
+</section>
+
+<!-- ============ 2. PREPARAR ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">02 / Preparar o ambiente</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Uma vez por POD: crie a pasta, configure as regras e distribua o app</h2>
+  <p class="lead">Feito por um Operations ou Business Manager antes de o time começar. Leva cerca de 30 minutos, a maior parte para preencher os Perfis.</p>
+  <div class="steps">
+    <div class="g050"><span class="y">01</span><p>Crie a pasta <b>Financeiro</b> no SharePoint da POD e copie para ela o Database.xlsx e o Config.xlsx do pacote.</p></div>
+    <div class="g150"><span class="y">02</span><p>Dê acesso de edição só a quem vai lançar dados. Os demais ficam com leitura.</p></div>
+    <div class="g300"><span class="y">03</span><p>Preencha o <b>Config.xlsx</b> no Excel (abas abaixo). Feche o arquivo ao terminar.</p></div>
+    <div class="g500"><span class="y">04</span><p>Publique o <b>HTML</b> num local fixo (ex.: a própria pasta Financeiro) para todos usarem a mesma versão.</p></div>
+  </div>
+  <h3>O que preencher no Config.xlsx</h3>
+  <table>
+    <tr><th style="width:22%">Aba</th><th style="width:15%">Situação</th><th>O que fazer</th></tr>
+    <tr><td class="k">Perfis</td><td><b>Obrigatória</b></td><td>Uma linha por iStudio + Perfil + Senioridade, com <i>Custo Total</i> e <i>Ratecard</i> de 2026 e 2027. Sem ela, o app não lista iStudios e não é possível alocar profissionais.</td></tr>
+    <tr><td class="k">Impostos</td><td>Confirmar</td><td>Vem com PIS 0,65% · COFINS 3% · INSS 2,7% · ISSQN 2% · OPEX 9,81%. Confirme com o Financeiro.</td></tr>
+    <tr><td class="k">Dias Uteis</td><td>Revisar</td><td>Vem com os dias úteis de 2027 (feriados nacionais). Ajuste feriados locais.</td></tr>
+    <tr><td class="k">PowerHouse</td><td>Recomendada</td><td>Lista de PowerHouses que aparece no cadastro de contratos.</td></tr>
+    <tr><td class="k">BP por Cliente</td><td>Opcional</td><td>Business Partner de cada cliente.</td></tr>
+    <tr><td class="k">Revenue State</td><td>Pronta</td><td>Status de contrato e de receita: CONFIRMADO, FECHADO, CHANCE ALTA, MÉDIA e BAIXA, PIPELINE, CANCELADO.</td></tr>
+    <tr class="dark"><td class="k">Projetos · Clientes x Tabelas</td><td>Não editar</td><td>O app mantém estas abas sozinho a cada gravação.</td></tr>
+  </table>
+  <div class="note"><span class="t">Exemplo de linha na aba Perfis</span><code>iStudio: Data &amp; AI · Perfil: Engenheiro de Dados · Senioridade: Pleno · Custo Total 2026: 95 · Ratecard 2026: 180 · Custo Total 2027 PC: 100 · Ratecard 2027: 190</code><br>Use exatamente os nomes de iStudio que o time vai escolher no app. Senioridades aceitas: Trainee, Júnior, Pleno, Sênior, Especialista.</div>
+  <div class="note dark"><span class="t">Não renomeie nada</span>O app encontra abas, tabelas e colunas pelo nome. Não renomeie as abas <code style="background:#404040;color:#fff">1. Config</code>, <code style="background:#404040;color:#fff">2. Propostas</code> e <code style="background:#404040;color:#fff">BL_Template</code> nem os cabeçalhos das colunas.</div>
+</section>
+
+<!-- ============ 3. PRIMEIRO ACESSO ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">03 / Primeiro acesso</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Conecte a pasta uma vez; nas próximas, o navegador lembra</h2>
+  <ol>
+    <li>Confirme que a pasta <b>Financeiro</b> está sincronizada no seu computador e com os arquivos baixados (não só "na nuvem").</li>
+    <li>Abra o <code>Gestao_Financeira_Projetos.html</code> no <b>Chrome</b> ou no <b>Edge</b> para computador.</li>
+    <li>Clique em <b>Conectar pasta Financeiro</b>, escolha a pasta e clique em <b>Permitir</b> quando o navegador pedir acesso de leitura e gravação.</li>
+    <li>O app abre em <b>modo leitura</b>. Para alterar algo, clique em <b>Editar</b> e informe seu nome (é o que os colegas verão enquanto você edita).</li>
+  </ol>
+  <figure><img src="img/welcome.png" alt="Tela inicial do app"><figcaption>Tela inicial · Conectar a pasta Financeiro</figcaption></figure>
+  <div class="note"><span class="t">O app cria na pasta</span><code>_safeharbor.lock</code> (trava de edição) · <code>_backups_safeharbor/</code> (backups) · <code>_safeharbor_config/</code> (cadastro compartilhado). Não apague nem edite esses itens à mão.</div>
+</section>
+
+<!-- ============ 4. PRIMEIRO PROJETO ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">04 / Primeiro cliente e projeto</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Cliente, projeto e contrato nascem juntos, num único formulário</h2>
+  <ol>
+    <li>Com o app em modo edição, vá em <b>Projetos</b> e clique em <b>+ Novo projeto</b>.</li>
+    <li>Em <b>Cliente</b>, escolha <b>+ Novo cliente…</b> e informe o nome. Deixe marcado <b>Criar aba de billing (BL_)</b>: é nela que ficam as alocações do cliente.</li>
+    <li>Informe o <b>nome do projeto</b> e o <b>Funding</b>: <i>Sim</i> torna o projeto isento de impostos.</li>
+    <li>Preencha o <b>contrato inicial</b>: nome da proposta, status, iStudio, datas e valor assinado. Ele é opcional, mas obrigatório para projeto isento.</li>
+    <li>Clique em <b>Salvar</b>. Com <i>Gravar automaticamente</i> ligado, o app grava no Database e no Config na hora.</li>
+  </ol>
+  <figure><img src="img/modal.png" alt="Formulário de novo projeto"><figcaption>Novo projeto com cliente novo e contrato inicial (dados fictícios)</figcaption></figure>
+  <h3>Mais contratos para o mesmo projeto</h3>
+  <p>Na página do projeto, use <b>+ Adicionar contrato</b>. Aditivos e renovações entram como novos contratos; o app soma o valor assinado e mostra o saldo.</p>
+</section>
+
+<!-- ============ 5. ALOCAÇÃO ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">05 / Time e alocação</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Uma linha por profissional por mês, com ratecard e custo sugeridos</h2>
+  <ol>
+    <li>Na página do projeto, clique em <b>+ Adicionar profissional</b>.</li>
+    <li>Escolha <b>iStudio → Papel → Senioridade</b>. O app busca na aba Perfis o ratecard (R$/h) e o custo/h, já com o OPEX, conforme o ano do mês de execução.</li>
+    <li>Informe o <b>mês</b>, as <b>horas provisionadas</b> e as <b>horas executadas</b>. Use <i>Repetir até</i> para lançar vários meses de uma vez.</li>
+    <li>Os valores sugeridos podem ser alterados à mão. Clique em <b>Salvar</b>.</li>
+  </ol>
+  <figure><img src="img/alloc.png" alt="Formulário de alocação"><figcaption>Adicionar profissional · valores padrão vindos da aba Perfis do Config</figcaption></figure>
+  <ul>
+    <li><b>Replicar mês</b> copia todas as alocações de um mês para outro. Para meses futuros, deixe marcado "Horas executadas = horas provisionadas".</li>
+    <li><b>Ajuste de horas</b> (menu lateral) corrige as horas executadas do mês, agrupadas por cliente › projeto › profissional. O motivo vai para a coluna Obs.</li>
+  </ul>
+</section>
+
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">05 / Time e alocação</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>A página do projeto mostra contrato, consumo e margem mês a mês</h2>
+  <figure><img src="img/proj.png" alt="Página do projeto"><figcaption>Página do projeto · contratos, financeiro mensal e time (dados fictícios)</figcaption></figure>
+  <div class="stats">
+    <div class="stat"><div class="n">R$ 120 mil</div><div class="c">valor assinado</div></div>
+    <div class="stat"><div class="n">R$ 27 mil</div><div class="c">consumido (bruto)</div></div>
+    <div class="stat"><div class="n">29,5%</div><div class="c">margem bruta</div></div>
+  </div>
+</section>
+
+<!-- ============ 6. DASHBOARD ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">06 / Dashboard</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Acompanhe receita, resultado e margem com filtros por ano, período e dimensão</h2>
+  <figure><img src="img/dash.png" alt="Dashboard"><figcaption>Visão executiva · indicadores, evolução mensal e cascata do resultado</figcaption></figure>
+  <ul>
+    <li>Escolha <b>Ano</b> e <b>Período</b> (ano inteiro, acumulado, trimestre ou mês). Clicar numa barra filtra o restante.</li>
+    <li>Use as abas <b>Rentabilidade</b>, <b>Time e horas</b> e <b>Contratos</b> para outros recortes.</li>
+    <li><b>Personalizar</b> adiciona, remove e reorganiza widgets; o layout pode ser exportado em <code>.json</code> para o time.</li>
+    <li><b>Pontos de atenção</b> lista margem negativa ou baixa, contratos estourados ou perto do fim e alocações após o fim do contrato.</li>
+  </ul>
+</section>
+
+<!-- ============ 7. REGRAS ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">07 / Regras de negócio</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Os cálculos seguem a mesma regra no app e nas fórmulas da planilha</h2>
+  <pre>Valor bruto     = horas executadas × R$/h × fator
+Impostos        = valor bruto × (PIS + COFINS + INSS + ISSQN)   → zero se o projeto for isento
+Valor líquido   = valor bruto − impostos
+Custo           = horas executadas × custo/h
+Resultado       = valor líquido − custo
+Margem bruta    = resultado ÷ valor líquido</pre>
+  <div class="cards c2">
+    <div class="card g150"><span class="t">Tributação</span><p>Vem do campo <b>Funding</b> do contrato: Sim = isento. Projeto sem contrato é tributado. Contratos do mesmo projeto com Funding diferente geram o alerta "conflito".</p></div>
+    <div class="card g300"><span class="t">Fonte das regras</span><p>Impostos, perfis, dias úteis e listas vêm do <b>Config.xlsx</b>. A aba 1. Config do Database é só um espelho técnico que o app atualiza.</p></div>
+  </div>
+  <h3>Faixas de margem bruta</h3>
+  <table>
+    <tr><th style="width:35%">Margem</th><th>Faixa no app</th></tr>
+    <tr><td class="k">abaixo de 20%</td><td><span class="sw" style="background:#c62828"></span>Vermelha · atenção</td></tr>
+    <tr><td class="k">20% a 28,9%</td><td><span class="sw" style="background:#e0a100"></span>Amarela · abaixo da meta</td></tr>
+    <tr><td class="k">29% ou mais</td><td><span class="sw" style="background:#1e7a3c"></span>Verde · na meta</td></tr>
+  </table>
+</section>
+
+<!-- ============ 8. EQUIPE ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">08 / Uso em equipe</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Uma pessoa edita por vez; os outros acompanham em modo leitura</h2>
+  <table>
+    <tr><th style="width:36%">Barra no topo</th><th>O que fazer</th></tr>
+    <tr><td><b>Somente leitura</b> · ninguém editando</td><td>Clique em <b>Editar</b>.</td></tr>
+    <tr><td><b>Somente leitura</b> · Fulano editando</td><td>Clique em <b>Pedir para editar</b>. Quando Fulano liberar, a edição passa para você.</td></tr>
+    <tr><td><b>Você está editando</b></td><td>Ao terminar, clique em <b>Liberar edição</b>. Se alguém pedir, use <b>Liberar agora</b>.</td></tr>
+  </table>
+  <div class="stats">
+    <div class="stat"><div class="n">10 min</div><div class="c">sem atividade libera a edição</div></div>
+    <div class="stat"><div class="n">3 min</div><div class="c">para a trava expirar se o app fechar</div></div>
+    <div class="stat"><div class="n">3 dias</div><div class="c">de backups em _backups_safeharbor</div></div>
+  </div>
+  <h3>Gravação, backups e conflitos</h3>
+  <ul>
+    <li><b>Gravar automaticamente</b> vem ligado. Desligado, as alterações acumulam até você clicar em <b>Salvar agora</b>.</li>
+    <li>Na primeira gravação de cada sessão, o app copia o Database e o Config para <code>_backups_safeharbor/</code>.</li>
+    <li>Se o arquivo mudou por fora (alguém editou no Excel), o app pergunta: <b>Recarregar do arquivo</b> descarta suas alterações; <b>Sobrescrever</b> grava por cima, depois de um backup. Na dúvida, recarregue.</li>
+  </ul>
+  <div class="note dark"><span class="t">Feche o Excel antes de editar no app</span>Com o Database ou o Config abertos no Excel, o Windows bloqueia o arquivo e o app não consegue gravar.</div>
+</section>
+
+<!-- ============ 9. PROBLEMAS ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">09 / Boas práticas e problemas comuns</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>O que fazer, o que evitar e como resolver os avisos mais comuns</h2>
+  <div class="cards c2">
+    <div class="card g150"><span class="t">Faça</span><ul class="bar"><li>Libere a edição ao terminar.</li><li>Altere regras só no Config.xlsx.</li><li>Informe o motivo em todo ajuste de horas.</li><li>Espere o OneDrive sincronizar antes de editar.</li></ul></div>
+    <div class="card g600"><span class="t">Evite</span><ul class="bar"><li>Editar no Excel e no app ao mesmo tempo.</li><li>Renomear abas, tabelas ou colunas.</li><li>Apagar a trava ou a pasta de backups.</li><li>Enviar planilhas ou prints com dados para fora da empresa.</li></ul></div>
+  </div>
+  <table>
+    <tr><th style="width:38%">Sintoma</th><th>Causa e solução</th></tr>
+    <tr><td>Não aparece "Conectar pasta"</td><td>Navegador sem suporte. Use Chrome ou Edge para computador.</td></tr>
+    <tr><td>Lista de iStudio vazia ao alocar</td><td>A aba <b>Perfis</b> do Config está vazia. Preencha e recarregue o app.</td></tr>
+    <tr><td>"Database ou Config está bloqueado"</td><td>Arquivo aberto no Excel (seu ou de um colega). Feche e tente de novo.</td></tr>
+    <tr><td>"Fulano está editando", mas ele já saiu</td><td>A trava expira em 3 minutos. Clique em <b>Atualizar</b> e depois em <b>Editar</b>.</td></tr>
+    <tr><td>Ratecard não é sugerido</td><td>O papel ou a senioridade não existem na aba Perfis para aquele iStudio. Cadastre ou informe à mão.</td></tr>
+    <tr><td>Preciso desfazer uma gravação</td><td>Com o app e o Excel fechados, copie o backup de <code>_backups_safeharbor/</code> por cima do arquivo. Depois de 3 dias, use o histórico de versões do SharePoint.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 10. REFERÊNCIA ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">10 / Referência das planilhas</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Estrutura do Database e do Config que vêm no pacote</h2>
+  <h3>Database.xlsx</h3>
+  <table>
+    <tr><th style="width:24%">Aba</th><th>Conteúdo</th></tr>
+    <tr><td class="k">1. Config</td><td>Espelho técnico: listas, alíquotas (U3:Y3), dias úteis (T:V), clientes x tabelas (AA:AE) e chaves de tributação (AF:AG). As fórmulas das abas BL_ leem daqui.</td></tr>
+    <tr><td class="k">2. Propostas</td><td>Tabela <code>tbl_Propostas</code>: um contrato por linha, com valor assinado, valor usado, saldo (Delta) e Funding.</td></tr>
+    <tr><td class="k">BL_Template</td><td>Modelo das abas de billing. O app cria <code>BL_&lt;cliente&gt;</code> a partir dela, com a tabela <code>tbl_&lt;cliente&gt;</code>.</td></tr>
+  </table>
+  <h3>Config.xlsx</h3>
+  <table>
+    <tr><th style="width:24%">Aba</th><th>Conteúdo</th></tr>
+    <tr><td class="k">Leia-me</td><td>Resumo do que preencher em cada aba.</td></tr>
+    <tr><td class="k">Impostos · Perfis · Dias Uteis</td><td>Regras de cálculo: alíquotas e OPEX, ratecards e custos por perfil, dias e horas úteis por mês.</td></tr>
+    <tr><td class="k">Revenue State · Status da Proposta · PowerHouse</td><td>Listas dos formulários.</td></tr>
+    <tr><td class="k">Projetos · Clientes x Tabelas · BP por Cliente</td><td>Mantidas pelo app a cada gravação (BP por Cliente pode ser preenchida à mão).</td></tr>
+  </table>
+</section>
+
+<!-- ============ ENCERRAMENTO ============ -->
+<section class="page closing">
+  <img src="img/airr-logo-white.svg" alt="AI/R Agentic AI Engineering">
+  <h2>Pronto para começar: prepare o Config, conecte a pasta e crie o primeiro projeto ↗</h2>
+  <div class="contact">
+    <b>DÚVIDAS</b><br>
+    Operations Manager da sua POD<br>
+    <b>PACOTE</b> / Gestao_Financeira_Projetos.html · Financeiro/Database.xlsx · Financeiro/Config.xlsx
+  </div>
+</section>
+
+</body>
+</html>

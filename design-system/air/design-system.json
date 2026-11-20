@@ -1,0 +1,166 @@
+{
+  "v": 3,
+  "assetGroups": {
+    "Backgrounds": {
+      "files": {
+        "backdrop-blur-dark.jpg": {
+          "blob": "6245e6a2d8e562bbfd66bc1dad3f7248",
+          "name": "backdrop-blur-dark.jpg",
+          "size": 18086,
+          "type": "image/jpeg"
+        },
+        "backdrop-blur-teal.jpg": {
+          "blob": "949fe855518dbae29e594bab7ca4334f",
+          "name": "backdrop-blur-teal.jpg",
+          "size": 14095,
+          "type": "image/jpeg"
+        },
+        "closing-blur-mark.jpg": {
+          "blob": "d1c3a40a3712da66f8c41f90e741f7df",
+          "name": "closing-blur-mark.jpg",
+          "size": 29657,
+          "type": "image/jpeg"
+        },
+        "cover-hand-interface.jpg": {
+          "blob": "32a769e55274e81741f889795befb695",
+          "name": "cover-hand-interface.jpg",
+          "size": 96077,
+          "type": "image/jpeg"
+        },
+        "section-abstract-blocks.jpg": {
+          "blob": "2ff496d6a92116107430d00c21d370f1",
+          "name": "section-abstract-blocks.jpg",
+          "size": 66208,
+          "type": "image/jpeg"
+        },
+        "section-hands-circuit.jpg": {
+          "blob": "aefd6f8628e75b2bfbd55b5e5ea04d25",
+          "name": "section-hands-circuit.jpg",
+          "size": 41642,
+          "type": "image/jpeg"
+        },
+        "section-portrait-screen.jpg": {
+          "blob": "09138eb8cc4cc5680d744aae6471bd63",
+          "name": "section-portrait-screen.jpg",
+          "size": 56255,
+          "type": "image/jpeg"
+        },
+        "section-smiling-colleague.jpg": {
+          "blob": "4bd9a523d84ae2711acd8d5694acd41a",
+          "name": "section-smiling-colleague.jpg",
+          "size": 37741,
+          "type": "image/jpeg"
+        }
+      },
+      "name": "Backgrounds",
+      "order": [
+        "cover-hand-interface.jpg",
+        "section-portrait-screen.jpg",
+        "section-abstract-blocks.jpg",
+        "section-smiling-colleague.jpg",
+        "section-hands-circuit.jpg",
+        "backdrop-blur-teal.jpg",
+        "backdrop-blur-dark.jpg",
+        "closing-blur-mark.jpg"
+      ],
+      "tile": "l"
+    },
+    "Icons": {
+      "files": {
+        "arrow-black.svg": {
+          "blob": "297ffae05718316ea4958c42bffea3d4",
+          "name": "arrow-black.svg",
+          "size": 317,
+          "type": "image/svg+xml"
+        },
+        "arrow-white.svg": {
+          "blob": "d7901f6a4b09e6376485d5884ba2a10d",
+          "name": "arrow-white.svg",
+          "size": 317,
+          "type": "image/svg+xml"
+        }
+      },
+      "name": "Icons",
+      "order": [
+        "arrow-black.svg",
+        "arrow-white.svg"
+      ],
+      "tile": "s"
+    },
+    "Logos": {
+      "files": {
+        "airr-compass-black.png": {
+          "blob": "ade65271c4c413054d038f84ec1d84df",
+          "name": "airr-compass-black.png",
+          "size": 5491,
+          "type": "image/png"
+        },
+        "airr-compass-white.png": {
+          "blob": "c77f5322a2624847f815aaa53f0d02dd",
+          "name": "airr-compass-white.png",
+          "size": 13466,
+          "type": "image/png"
+        },
+        "airr-logo-black.svg": {
+          "blob": "15bea9a4cb23fd6d28b9b5780e9f97f8",
+          "name": "airr-logo-black.svg",
+          "size": 10616,
+          "type": "image/svg+xml"
+        },
+        "airr-logo-cover-white.png": {
+          "blob": "d6ef25ccc592d0d9ed2b8eeba47c694e",
+          "name": "airr-logo-cover-white.png",
+          "size": 18174,
+          "type": "image/png"
+        },
+        "airr-logo-white.svg": {
+          "blob": "ed12e94679b94ec2b51525c735d36e53",
+          "name": "airr-logo-white.svg",
+          "size": 10616,
+          "type": "image/svg+xml"
+        },
+        "airr-wordmark-horizontal-white.png": {
+          "blob": "98947c41105a95ca023f077c972713da",
+          "name": "airr-wordmark-horizontal-white.png",
+          "size": 13315,
+          "type": "image/png"
+        }
+      },
+      "name": "Logos",
+      "order": [
+        "airr-logo-black.svg",
+        "airr-logo-white.svg",
+        "airr-logo-cover-white.png",
+        "airr-wordmark-horizontal-white.png",
+        "airr-compass-white.png",
+        "airr-compass-black.png"
+      ],
+      "tile": "m"
+    }
+  },
+  "blobs": {},
+  "createdOnFiles": {
+    "at": "2026-10-13T13:20:00Z",
+    "v": 1
+  },
+  "docs": {
+    "readme": "project/README.md",
+    "sections": []
+  },
+  "groups": [
+    "Logos",
+    "Icons",
+    "Backgrounds"
+  ],
+  "lastChange": {
+    "at": "2026-10-13T13:20:00Z",
+    "by": "Orlando",
+    "note": "Sistema criado a partir do template oficial AI/R 2026 (PDF).",
+    "via": "Claude (chat)"
+  },
+  "layout": "files",
+  "libraries": [],
+  "namespace": "AIR",
+  "sections": {},
+  "title": "AI/R — Agentic AI Engineering"
+}

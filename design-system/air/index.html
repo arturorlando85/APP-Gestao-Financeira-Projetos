@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AI/R — Design System (local)</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { margin: 0; padding: 32px 40px; font-family: var(--font-display); color: var(--ink); background: var(--surface); }
+  h1 { font-weight: 200; font-size: 40px; margin: 0 0 4px; }
+  p.sub { font-family: var(--font-mono); font-size: 13px; color: var(--gray-500); margin: 0 0 28px; }
+  h2 { font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 32px 0 10px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+  .item { margin: 0 0 18px; }
+  .item b { display: block; font-family: var(--font-mono); font-size: 13px; font-weight: 400; margin-bottom: 6px; }
+  iframe { width: 100%; border: 1px solid var(--gray-100); display: block; background: #fff; }
+  .sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .sw div { height: 64px; padding: 6px; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: flex-end; }
+</style>
+</head>
+<body>
+<h1>AI/R — Agentic AI Engineering</h1>
+<p class="sub">Prévias locais do design system · tokens.css + components/bundle.css</p>
+
+<h2>Rampa de cinzas</h2>
+<div class="sw" id="sw"></div>
+
+<h2>Layout</h2>
+<div class="item"><b>SlideHeader</b><iframe src="components/SlideHeader/preview.html" height="110"></iframe></div>
+<div class="item"><b>ClassificationLabel</b><iframe src="components/ClassificationLabel/preview.html" height="60"></iframe></div>
+<div class="item"><b>SectionDivider</b><iframe src="components/SectionDivider/preview.html" height="560"></iframe></div>
+<div class="item"><b>ContactBlock</b><iframe src="components/ContactBlock/preview.html" height="420"></iframe></div>
+<div class="item"><b>Cover</b><iframe src="components/Cover/preview.html" height="300"></iframe></div>
+
+<h2>Conteúdo</h2>
+<div class="item"><b>Tag</b><iframe src="components/Tag/preview.html" height="150"></iframe></div>
+<div class="item"><b>ArrowList</b><iframe src="components/ArrowList/preview.html" height="220"></iframe></div>
+<div class="item"><b>BarList</b><iframe src="components/BarList/preview.html" height="260"></iframe></div>
+<div class="item"><b>Card</b><iframe src="components/Card/preview.html" height="300"></iframe></div>
+<div class="item"><b>FeatureRow</b><iframe src="components/FeatureRow/preview.html" height="380"></iframe></div>
+<div class="item"><b>ImageCard</b><iframe src="components/ImageCard/preview.html" height="260"></iframe></div>
+<div class="item"><b>NotchTable</b><iframe src="components/NotchTable/preview.html" height="380"></iframe></div>
+
+<h2>Dados</h2>
+<div class="item"><b>StatBlock</b><iframe src="components/StatBlock/preview.html" height="240"></iframe></div>
+<div class="item"><b>RankedBars</b><iframe src="components/RankedBars/preview.html" height="420"></iframe></div>
+<div class="item"><b>Timeline</b><iframe src="components/Timeline/preview.html" height="480"></iframe></div>
+
+<script>
+  const g = ['050','100','150','200','250','300','400','450','500','600','650','700','750'];
+  document.getElementById('sw').innerHTML = g.map(n => {
+    const dark = +n >= 450;
+    return `<div style="background:var(--gray-${n});color:${dark ? '#fff' : '#000'}">gray-${n}</div>`;
+  }).join('');
+</script>
+</body>
+</html>

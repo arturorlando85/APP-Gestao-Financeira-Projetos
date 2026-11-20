@@ -904,7 +904,7 @@ td.t-pos { color: var(--pos); } td.t-att { color: var(--att); } td.t-neg { color
           else if (h === 'Valor Usado') {
             const E = CL('Projeto') + r;
             const f = cl && cl.table ? `SUMIF(${cl.table}[Projeto],TRIM(${E}),${cl.table}[Valor Bruto])` : allTables.map(tb => `SUMIF(${tb}[Projeto],TRIM(${E}),${tb}[Valor Bruto])`).join('+');
-            xml = cellXml(ref, s, null, { f, v: usado });
+            xml = f ? cellXml(ref, s, null, { f, v: usado }) : cellXml(ref, s, 0); // sem nenhuma aba BL ainda: valor 0 (fórmula vazia corrompe o arquivo)
           } else if (h === 'Delta') xml = cellXml(ref, s, null, { f: `${CL('Valor Assinado')}${r}-${CL('Valor Usado')}${r}`, v: Lv - usado });
           else if (PROP_FIELDS.includes(h) || h === 'Funding') xml = cellXml(ref, s, p.fields[h], { date: h === 'Start Date' || h === 'End Date' });
           else xml = oc ? keepCellXml(oc, ref, dr) : cellXml(ref, s, null);
@@ -1411,7 +1411,7 @@ function viewProjects() {
   const statuses = [...new Set(m.projects.filter(p => canView(p.client)).map(p => projSummary(p).status || 'SEM PROPOSTA'))].sort();
   const clients = [...new Set(m.projects.filter(p => canView(p.client)).map(p => p.client))].sort((a, b) => a.localeCompare(b));
   const t = list.reduce((a, x) => (a.as += x.s.assin, a.us += x.s.assin ? x.s.usado : 0, a.b += x.s.bruto, a.l += x.s.liq, a.r += x.s.res, a), { as: 0, us: 0, b: 0, l: 0, r: 0 });
-  return `<div class="row" style="justify-content:space-between"><h1>Projetos</h1>${S.m.clients.some(c => canProject(c.name)) ? '<button class="btn pri" data-act="newProject">+ Novo projeto</button>' : ''}</div>
+  return `<div class="row" style="justify-content:space-between"><h1>Projetos</h1>${S.m.clients.some(c => canProject(c.name)) || canAdmin() ? '<button class="btn pri" data-act="newProject">+ Novo projeto</button>' : ''}</div>
   <div class="kpis">
     <div class="kpi"><div class="l">Projetos listados</div><div class="v">${list.length}</div><div class="s">${list.filter(x => x.s.bruto > 0).length} com receita em ${esc(S.f.year)}</div></div>
     <div class="kpi"><div class="l">Valor assinado</div><div class="v">${brlC(t.as)}</div><div class="s">contratos com valor informado</div></div>
@@ -1888,7 +1888,7 @@ const A = {
   close: () => { if (S.modal && S.modal.first) { toast('Cadastre o primeiro administrador para continuar.'); return; } S.modal = null; renderOverlays(); },
   closeBg: (el, e) => { if (e.target === el) A.close(); },
   tm: el => { S.teamMonth = el.dataset.m; render(); },
-  newProject: () => { const first = S.m.clients.filter(c => canEditClient(c.name)).map(c => c.name).sort((a, b) => a.localeCompare(b))[0]; S.modal = { kind: 'project', client: S.f.client || first }; renderOverlays(); },
+  newProject: () => { const first = S.m.clients.filter(c => canEditClient(c.name)).map(c => c.name).sort((a, b) => a.localeCompare(b))[0]; S.modal = { kind: 'project', client: S.f.client || first || (canAdmin() ? '__new' : undefined) }; renderOverlays(); },
   editProject: el => { S.modal = { kind: 'project', id: el.dataset.id }; renderOverlays(); },
   delProject: el => {
     const p = S.m.projects.find(x => x.id === el.dataset.id); const s = projSummary(p);
@@ -2957,7 +2957,7 @@ function viewDash() {
   const sel = (k, label, opts, allLabel = 'Todos') => `<label class="field">${label}<select data-bind="f.${k}"><option value="">${allLabel}</option>${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(f[k] || '') ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
   const projRows = f.client ? all.filter(r => r.cli === f.client) : all;
   const projOpts = [...new Map(projRows.filter(r => r.pid).map(r => [r.pid, f.client ? r.proj : `${r.proj} · ${r.cli}`])).entries()].sort((a, c) => a[1].localeCompare(c[1]));
-  const yopts = d.years.map(y => [y, y]); const mopts = d.months.filter(mm => mm.startsWith(f.year)).map(mm => [mm, mLabel(mm)]);
+  const yopts = [...new Set([...d.years, f.year].filter(Boolean))].sort().map(y => [y, y]); const mopts = d.months.filter(mm => mm.startsWith(f.year)).map(mm => [mm, mLabel(mm)]);
   const per = [['ano', 'Ano inteiro'], ['ytd', 'Acumulado até o mês'], ['q1', '1º trimestre'], ['q2', '2º trimestre'], ['q3', '3º trimestre'], ['q4', '4º trimestre'], ['mes', 'Só o mês de referência']];
   const fname = (k, v) => k === 'proj' ? ((S.m.projects.find(p => p.id === v) || {}).name || v) : k === 'status' ? stLabel(v) : v;
   const active = FDIMS.filter(([k]) => f[k]);

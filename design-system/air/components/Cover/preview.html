@@ -1,0 +1,35 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css">
+<style>
+  body{margin:0;background:var(--surface)}
+  #root{width:960px;height:300px;position:relative;background:var(--surface)}
+  .graphite{fill:var(--surface-graphite)} .g450{fill:var(--gray-450)} .g150{fill:var(--gray-150)} .g400{fill:var(--gray-400)}
+  .name{position:absolute;left:40px;top:140px;margin:0;font-family:var(--font-display);font-weight:200;font-size:64px;line-height:.95;color:var(--ink)}
+  .tagline{position:absolute;left:40px;top:274px;margin:0;font-family:var(--font-display);font-size:14px;line-height:1;color:var(--logo-tagline)}
+</style></head>
+<body>
+<div id="root">
+<svg width="960" height="110" viewBox="0 0 960 110" style="position:absolute;left:0;top:0" aria-hidden="true">
+<!-- blocks: surface-graphite 380×110, gray-450 230×110, gray-150 150×110, gray-400 200×110 (radius-none) -->
+<!-- arrangement: top-band skeleton, flush strip of unequal bands, the way the template splits slides into horizontal bands -->
+<!-- pattern: notched tags (geometric/modular row) because the cut top-right corner is the brand's one signature shape; tags in gray-150 over the dark bands -->
+<!-- scales: notch-tag 19px at 1920 = 9.5 here, space-tag-gap 14px = 7 here, tag height 68px = 34 here -->
+<rect class="graphite" x="0" y="0" width="380" height="110"/>
+<rect class="g450" x="380" y="0" width="230" height="110"/>
+<rect class="g150" x="610" y="0" width="150" height="110"/>
+<rect class="g400" x="760" y="0" width="200" height="110"/>
+<polygon class="g150" points="40,58 140.5,58 150,67.5 150,92 40,92"/>
+<polygon class="g150" points="157,58 207.5,58 217,67.5 217,92 157,92"/>
+<polygon class="g150" points="224,58 320.5,58 330,67.5 330,92 224,92"/>
+<polygon class="g150" points="400,58 470.5,58 480,67.5 480,92 400,92"/>
+<polygon class="g150" points="487,58 580.5,58 590,67.5 590,92 487,92"/>
+<polygon class="g450" points="630,16 730.5,16 740,25.5 740,50 630,50"/>
+</svg>
+<p class="name">AI/R —<br>Agentic AI Engineering</p>
+<p class="tagline">Grandes títulos leves, números em mono e uma rampa de cinzas com cantos cortados.</p>
+</div>
+<script>document.getElementById("root").setAttribute("data-ready","1");</script>
+</body>
+</html>
