@@ -188,7 +188,7 @@ section.card[style*="padding:0"] { padding: 0 !important; }
 .kpis { gap: 10px; }
 .kpi { border: 0; border-radius: 0; padding: 16px 18px 18px; background: var(--gray-050); color: #000; }
 .kpi:nth-child(2) { background: var(--gray-150); } .kpi:nth-child(3) { background: var(--gray-250); } .kpi:nth-child(4) { background: var(--gray-500); color: #fff; } .kpi:nth-child(5) { background: var(--gray-700); color: #fff; }
-.kpi .l { font-family: var(--mono); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; color: inherit; opacity: .85; display: flex; gap: 8px; align-items: center; }
+.kpi .l { font-family: var(--mono); font-size: 11px; letter-spacing: .03em; text-transform: uppercase; color: inherit; display: flex; gap: 8px; align-items: center; }
 .kpi .l::before { content: ""; width: 10px; height: 11px; flex: none; background: currentColor; -webkit-mask: var(--arrow) center/contain no-repeat; mask: var(--arrow) center/contain no-repeat; }
 .kpi .v { font-size: 26px; font-weight: 400; margin-top: 12px; letter-spacing: -.02em; }
 .kpi .s { font-family: var(--font); font-size: 12px; color: inherit; opacity: .8; margin-top: 4px; }
@@ -199,6 +199,7 @@ td { border-bottom: 1px solid var(--line); }
 tr.grp td { background: var(--gray-050); color: #000; font-weight: 500; }
 tr.tot td { border-top: 2px solid var(--rule); font-weight: 600; }
 tr.sub td { background: var(--surface-2); font-weight: 600; }
+tr.proj td { color: var(--ink-2); font-style: italic; } tr.tot.proj td { font-style: normal; color: var(--ink); border-top: 1px dashed var(--rule); }
 tr.click:hover td { background: var(--gray-050); }
 .neg { color: inherit; font-weight: 600; }
 /* formulários */
@@ -320,6 +321,7 @@ th.sort { cursor: pointer; user-select: none; } th.sort:hover, th.sort.on { colo
 .info:hover, .info:focus { opacity: 1; outline: none; background: var(--ink); color: var(--surface); }
 .info::after { content: attr(data-tip); display: none; position: absolute; top: calc(100% + 6px); right: -1px; z-index: 60; width: 280px; padding: 10px 12px; background: var(--gray-750); color: #fff; font: 400 12px/1.45 var(--font); letter-spacing: 0; text-align: left; white-space: pre-line; pointer-events: none; }
 .info:hover::after, .info:focus::after { display: block; }
+.kpis { position: relative; z-index: 4; } /* o balão do "i" fica acima dos cabeçalhos fixos das tabelas abaixo (abaixo da barra do topo, z-index 5) */
 table.heat th, table.heat td { padding: 5px 4px; text-align: center; } table.heat td.hl { text-align: left; white-space: nowrap; padding-right: 10px; }
 table.heat td.hc { font: 11px/1.2 var(--mono); min-width: 42px; border: 1px solid var(--surface); }
 table.heat td.hpos { background: var(--pos-bg); color: var(--pos); } table.heat td.hatt { background: var(--att-bg); color: var(--att); } table.heat td.hneg { background: var(--neg-bg); color: var(--neg); font-weight: 600; }
@@ -1286,6 +1288,7 @@ const TEAM_SORT = {
 const info = t => `<span class="info" tabindex="0" role="note" aria-label="${esc(t)}" data-tip="${esc(t)}">i</span>`;
 const tribChip = p => (p.trib === 'Isento' ? '<span class="chip acc">Isento</span>' : '<span class="muted">Tributado</span>') + (p.tribConflict ? ' <span class="chip warn" title="Contratos com Funding diferente; a planilha usa o primeiro">conflito</span>' : '');
 const statusChip = s => !s ? '<span class="muted">sem proposta</span>' : `<span class="chip ${/CONFIRMADO|FECHADO/.test(s) ? 'good' : /CANCELADO|PERDIDO/.test(s) ? 'bad' : /CHANCE/.test(s) ? 'warn' : ''}">${esc(s.charAt(0) + s.slice(1).toLowerCase())}</span>`;
+const PROJ_STATUS = ['CONFIRMADO', 'FECHADO']; // contratos que entram na margem projetada
 function projSummary(p) {
   const d = derive(); const rows = d.byProj.get(p.id) || []; const props = d.propsOf(p);
   const yr = S.f.year; const ry = rows.filter(r => r.month.startsWith(yr));
@@ -1296,7 +1299,17 @@ function projSummary(p) {
   const mref = S.f.month;
   const profs = new Set(rows.filter(r => r.month === mref && (+r.a.fields['Horas Executadas'] || 0) > 0).map(r => r.a.fields['Profissional']));
   const liq = sum(ry, 'liq'), res = sum(ry, 'res');
-  return { rows, props, assin, usado: sum(rows, 'bruto'), bruto: sum(ry, 'bruto'), liq, res, mb: liq ? res / liq : 0, hasLiq: !!liq,
+  // projeção no fim do contrato: o valor assinado dos contratos CONFIRMADO/FECHADO é faturado inteiro;
+  // o saldo não consumido não tem custo e vira resultado (impostos só se o projeto for tributado)
+  const conf = props.filter(x => PROJ_STATUS.includes(String(x.fields['Chance de Conversão'] || '').trim().toUpperCase()));
+  const assinConf = conf.reduce((t, x) => t + (typeof x.fields['Valor Assinado'] === 'number' ? x.fields['Valor Assinado'] : 0), 0);
+  const usado = sum(rows, 'bruto'); const tax = p.trib === 'Isento' ? 0 : C.taxRate(S.m);
+  const proj = assinConf > 0 ? (() => {
+    const receita = assinConf * (1 - tax), custo = sum(rows, 'custoTot'), resultado = receita - custo;
+    const saldo = assinConf - usado; // bruto; negativo = consumo acima do assinado (não faturado)
+    return { assin: assinConf, n: conf.length, tax, receita, custo, resultado, mb: receita ? resultado / receita : 0, saldo, saldoLiq: receita - sum(rows, 'liq'), saldoImp: saldo * tax };
+  })() : null;
+  return { rows, props, assin, usado, bruto: sum(ry, 'bruto'), liq, res, mb: liq ? res / liq : 0, hasLiq: !!liq, proj,
     start: starts[0], end: ends[ends.length - 1], status: statusOf(props), profs: profs.size };
 }
 
@@ -1523,7 +1536,10 @@ function viewProject() {
     <div class="kpi"><div class="l">Valor assinado${info('Soma do Valor Assinado de todos os contratos deste projeto (aba 2. Propostas), sem filtro de período.')}</div><div class="v">${s.assin ? brlC(s.assin) : '—'}</div><div class="s">${s.props.length} contrato(s)</div></div>
     <div class="kpi"><div class="l">Consumido (bruto total)${info('Soma do valor bruto de todas as alocações do projeto, em todos os meses e anos.\nBruto = horas executadas × R$/h × fator.\nSaldo = valor assinado − consumido.')}</div><div class="v">${brlC(s.usado)}</div><div class="s">${s.assin ? 'Saldo ' + brlC(s.assin - s.usado) : 'sem valor assinado'}</div></div>
     <div class="kpi"><div class="l">Líquido ${esc(S.f.year)}${info(`Soma do valor líquido das alocações com mês em ${S.f.year} (o ano do filtro).\nLíquido = bruto − impostos (zero de impostos se o projeto for isento).\nResultado = líquido − custo, com custo = horas executadas × custo/h.`)}</div><div class="v">${brlC(s.liq)}</div><div class="s">Resultado ${brlC(s.res)}</div></div>
-    <div class="kpi"><div class="l">Margem bruta ${esc(S.f.year)}${info(`Resultado ÷ líquido das alocações de ${S.f.year}. É o mesmo número do "Subtotal ${S.f.year}" do Financeiro mensal; o "Total do projeto" soma todos os anos.\nFaixas: abaixo de 20% vermelho, de 20% a 28,9% amarelo, 29% ou mais verde.\nProf.: profissionais com horas executadas em ${mLabel(S.f.month)}.`)}</div><div class="v ${s.hasLiq ? mbCls(s.mb) : ''}">${s.hasLiq ? pct(s.mb) : '—'}</div><div class="s">${s.profs} prof. em ${mLabel(S.f.month)}</div></div></div>
+    <div class="kpi"><div class="l">Margem bruta ${esc(S.f.year)}${info(`Resultado ÷ líquido das alocações de ${S.f.year}. É o mesmo número do "Subtotal ${S.f.year}" do Financeiro mensal; o "Total do projeto" soma todos os anos.\nFaixas: abaixo de 20% vermelho, de 20% a 28,9% amarelo, 29% ou mais verde.\nProf.: profissionais com horas executadas em ${mLabel(S.f.month)}.`)}</div><div class="v ${s.hasLiq ? mbCls(s.mb) : ''}">${s.hasLiq ? pct(s.mb) : '—'}</div><div class="s">${s.profs} prof. em ${mLabel(S.f.month)}</div></div>
+    <div class="kpi"><div class="l">Margem projetada${info(`Margem no fim do contrato${s.end ? ' (' + fmtDate(s.end) + ')' : ''}, considerando que o valor assinado dos contratos CONFIRMADO/FECHADO é faturado inteiro.\nReceita = valor assinado${s.proj && s.proj.tax ? ' − impostos' : ''}${p.trib === 'Isento' ? ' (projeto isento: sem impostos)' : ''}.\nCusto = custo de todas as alocações do projeto, inclusive meses futuros já lançados.\nMargem = (receita − custo) ÷ receita.\nO saldo não consumido não tem custo e entra como resultado; consumo acima do assinado não é faturado e reduz a margem.`)}</div>
+      <div class="v ${s.proj ? mbCls(s.proj.mb) : ''}">${s.proj ? pct(s.proj.mb) : '—'}</div>
+      <div class="s">${!s.proj ? 'sem contrato confirmado' : s.proj.saldo >= 0 ? `+ ${brlC(s.proj.saldoLiq)} de saldo não consumido` : `${brlC(-s.proj.saldo)} acima do assinado`}</div></div></div>
   ${S.m.hasFunding && p.noProposal ? '<div class="note">Este projeto não tem contrato na aba 2. Propostas. Pela regra da planilha, a tributação vem do campo Funding do contrato; sem contrato, ele fica sempre <b>Tributado</b>.</div>' : ''}
   <section class="card"><header><h2>Contratos e propostas</h2><p>Linhas da aba 2. Propostas</p><span class="spacer"></span>${ed ? `<button class="btn sm" data-act="newProp" data-id="${p.id}">+ Adicionar contrato</button>` : ''}</header>
     <div class="tbl-wrap"><table><thead><tr><th>Proposta</th><th>PowerHouse</th><th>Status</th><th>iStudio</th><th>Pre-sales</th><th>Início</th><th>Fim</th><th>COLT OPT</th>${S.m.hasFunding ? '<th>Funding</th>' : ''}<th class="n">Assinado</th><th></th></tr></thead><tbody>
@@ -1534,7 +1550,11 @@ function viewProject() {
   <section class="card"><header><h2>Financeiro mensal</h2><p>Impostos com as alíquotas da Config${p.trib === 'Isento' ? ' (projeto isento)' : ''}</p></header>
     <div class="tbl-wrap"><table><thead><tr><th>Mês</th><th class="n">Horas</th><th class="n">Prof.</th><th class="n">Bruto</th><th class="n">Impostos</th><th class="n">Líquido</th><th class="n">Custo</th><th class="n">Resultado</th><th class="n">MB</th></tr></thead><tbody>
     ${finRows || '<tr><td colspan="9" class="empty">Sem alocações</td></tr>'}
-    ${fin.length ? `<tr class="tot"><td>Total do projeto</td>${finCells(ft)}</tr>` : ''}</tbody></table></div></section>
+    ${fin.length ? `<tr class="tot"><td>Total do projeto</td>${finCells(ft)}</tr>` : ''}
+    ${s.proj && fin.length ? (() => { const P = s.proj; const over = P.saldo < 0;
+      return `<tr class="proj"><td>${over ? 'Consumo acima do assinado (não faturado)' : 'Saldo não consumido (faturado no fim)'}</td><td class="n"></td><td></td><td class="n">${brl(P.saldo)}</td><td class="n">${brl(P.saldoImp)}</td><td class="n">${brl(P.saldoLiq)}</td><td class="n">${brl(0)}</td><td class="n${cls(P.saldoLiq)}">${brl(P.saldoLiq)}</td><td></td></tr>
+      <tr class="tot proj"><td>Total projetado${s.end ? ' · fim ' + esc(fmtDate(s.end)) : ''}</td><td class="n"></td><td></td><td class="n">${brl(P.assin)}</td><td class="n">${brl(P.assin * P.tax)}</td><td class="n">${brl(P.receita)}</td><td class="n">${brl(P.custo)}</td><td class="n${cls(P.resultado)}">${brl(P.resultado)}</td><td class="n">${mbChip(P.mb, !!P.receita)}</td></tr>`; })() : ''}</tbody></table></div>
+    ${s.proj && fin.length ? `<p class="muted" style="margin:8px 0 0;font-size:12px">Projeção: ${s.proj.n} contrato(s) Confirmado/Fechado somando ${brl(s.proj.assin)}, faturados inteiros no fim do projeto.${s.assin > s.proj.assin ? ` Contratos com outro status (${brl(s.assin - s.proj.assin)}) ficam fora da projeção.` : ''}</p>` : ''}</section>
   <section class="card"><header><h2>Time e alocação</h2><p>Uma linha por profissional por mês (aba ${esc(cl && cl.sheet || '—')})</p><span class="spacer"></span>
     ${edT && cl && cl.sheet ? `<button class="btn sm" data-act="adjProj" data-id="${p.id}">Ajustar horas</button><button class="btn sm" data-act="replicate" data-id="${p.id}">Replicar mês</button><button class="btn sm pri" data-act="newAlloc" data-id="${p.id}">+ Adicionar profissional</button>` : ''}</header>
     ${!cl || !cl.sheet ? `<div class="note">Este cliente ainda não tem aba de billing na planilha. ${ed && canAdmin() ? `<button class="btn sm" data-act="createSheet" data-id="${p.id}">Criar aba de billing para ${esc(p.client)}</button>` : ''}</div>` : `
