@@ -198,6 +198,7 @@ th { color: var(--ink); font-weight: 500; font-size: 11px; text-transform: upper
 td { border-bottom: 1px solid var(--line); }
 tr.grp td { background: var(--gray-050); color: #000; font-weight: 500; }
 tr.tot td { border-top: 2px solid var(--rule); font-weight: 600; }
+tr.sub td { background: var(--surface-2); font-weight: 600; }
 tr.click:hover td { background: var(--gray-050); }
 .neg { color: inherit; font-weight: 600; }
 /* formulários */
@@ -664,7 +665,13 @@ function viewProject() {
   const tr = (S.teamMonth === 'all' ? s.rows : s.rows.filter(r => r.month === S.teamMonth)).slice().sort((a, b) => a.month.localeCompare(b.month) || String(a.a.fields['Profissional'] || '').localeCompare(String(b.a.fields['Profissional'] || '')));
   const tt = tr.reduce((t, r) => (t.h += +r.a.fields['Horas Executadas'] || 0, t.b += r.k.bruto, t.l += r.k.liq, t.c += r.k.custoTot, t.r += r.k.res, t), { h: 0, b: 0, l: 0, c: 0, r: 0 });
   const fin = months.map(mm => { const a = s.rows.filter(r => r.month === mm); const o = a.reduce((t, r) => (t.h += +r.a.fields['Horas Executadas'] || 0, t.b += r.k.bruto, t.i += r.k.imp, t.l += r.k.liq, t.c += r.k.custoTot, t.r += r.k.res, t), { h: 0, b: 0, i: 0, l: 0, c: 0, r: 0 }); o.n = new Set(a.filter(r => (+r.a.fields['Horas Executadas'] || 0) > 0).map(r => r.a.fields['Profissional'])).size; o.mm = mm; return o; });
-  const ft = fin.reduce((t, o) => (t.h += o.h, t.b += o.b, t.i += o.i, t.l += o.l, t.c += o.c, t.r += o.r, t), { h: 0, b: 0, i: 0, l: 0, c: 0, r: 0 });
+  const finSum = list => list.reduce((t, o) => (t.h += o.h, t.b += o.b, t.i += o.i, t.l += o.l, t.c += o.c, t.r += o.r, t), { h: 0, b: 0, i: 0, l: 0, c: 0, r: 0 });
+  const ft = finSum(fin);
+  // linhas do Financeiro mensal: meses, subtotal por ano (quando o projeto atravessa anos) e total do projeto
+  const finCells = o => `<td class="n">${num(o.h)}</td><td class="n">${o.n != null ? o.n : ''}</td><td class="n">${brl(o.b)}</td><td class="n">${brl(o.i)}</td><td class="n">${brl(o.l)}</td><td class="n">${brl(o.c)}</td><td class="n${cls(o.r)}">${brl(o.r)}</td><td class="n">${mbChip(o.l ? o.r / o.l : 0, !!o.l)}</td>`;
+  const finYears = [...new Set(fin.map(o => o.mm.slice(0, 4)))];
+  const finRows = finYears.map(y => { const ms = fin.filter(o => o.mm.startsWith(y));
+    return ms.map(o => `<tr><td>${mLabel(o.mm)}</td>${finCells(o)}</tr>`).join('') + (finYears.length > 1 ? `<tr class="sub"><td>Subtotal ${y}</td>${finCells(finSum(ms))}</tr>` : ''); }).join('');
   return `<div class="crumbs"><button data-act="go" data-v="projetos">Projetos</button> / ${esc(p.client)}</div>
   <div class="phead"><div class="t"><h1>${esc(p.name)}</h1><div class="row">${statusChip(s.status)}${p.trib === 'Isento' ? `<span class="chip acc">Isento de impostos${S.m.hasFunding ? ' (Funding)' : ''}</span>` : '<span class="chip">Tributado</span>'}${p.tribConflict ? '<span class="chip warn">Funding diferente entre contratos</span>' : ''}
     <span class="muted">${esc(p.client)}${cl && cl.sheet ? ' · aba ' + esc(cl.sheet) : ' · sem aba de billing'}</span></div></div>
@@ -683,8 +690,8 @@ function viewProject() {
     </tbody></table></div></section>
   <section class="card"><header><h2>Financeiro mensal</h2><p>Impostos com as alíquotas da Config${p.trib === 'Isento' ? ' (projeto isento)' : ''}</p></header>
     <div class="tbl-wrap"><table><thead><tr><th>Mês</th><th class="n">Horas</th><th class="n">Prof.</th><th class="n">Bruto</th><th class="n">Impostos</th><th class="n">Líquido</th><th class="n">Custo</th><th class="n">Resultado</th><th class="n">MB</th></tr></thead><tbody>
-    ${fin.map(o => `<tr><td>${mLabel(o.mm)}</td><td class="n">${num(o.h)}</td><td class="n">${o.n}</td><td class="n">${brl(o.b)}</td><td class="n">${brl(o.i)}</td><td class="n">${brl(o.l)}</td><td class="n">${brl(o.c)}</td><td class="n${cls(o.r)}">${brl(o.r)}</td><td class="n">${mbChip(o.l ? o.r / o.l : 0, !!o.l)}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Sem alocações</td></tr>'}
-    ${fin.length ? `<tr class="tot"><td>Total</td><td class="n">${num(ft.h)}</td><td></td><td class="n">${brl(ft.b)}</td><td class="n">${brl(ft.i)}</td><td class="n">${brl(ft.l)}</td><td class="n">${brl(ft.c)}</td><td class="n${cls(ft.r)}">${brl(ft.r)}</td><td class="n">${mbChip(ft.l ? ft.r / ft.l : 0, !!ft.l)}</td></tr>` : ''}</tbody></table></div></section>
+    ${finRows || '<tr><td colspan="9" class="empty">Sem alocações</td></tr>'}
+    ${fin.length ? `<tr class="tot"><td>Total do projeto</td>${finCells(ft)}</tr>` : ''}</tbody></table></div></section>
   <section class="card"><header><h2>Time e alocação</h2><p>Uma linha por profissional por mês (aba ${esc(cl && cl.sheet || '—')})</p><span class="spacer"></span>
     ${edT && cl && cl.sheet ? `<button class="btn sm" data-act="adjProj" data-id="${p.id}">Ajustar horas</button><button class="btn sm" data-act="replicate" data-id="${p.id}">Replicar mês</button><button class="btn sm pri" data-act="newAlloc" data-id="${p.id}">+ Adicionar profissional</button>` : ''}</header>
     ${!cl || !cl.sheet ? `<div class="note">Este cliente ainda não tem aba de billing na planilha. ${ed && canAdmin() ? `<button class="btn sm" data-act="createSheet" data-id="${p.id}">Criar aba de billing para ${esc(p.client)}</button>` : ''}</div>` : `
