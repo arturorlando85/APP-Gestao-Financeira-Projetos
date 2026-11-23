@@ -1064,7 +1064,19 @@ td.t-pos { color: var(--pos); } td.t-att { color: var(--att); } td.t-neg { color
       for (const o of await table(names.dias)) { const v = Object.values(o).slice(1); const i = MES.indexOf(norm(v[0])); if (i >= 0 && +v[1] > 0) m.workdays[i + 1] = { dias: +v[1], horas: +v[2] }; } }
     // BP por cliente e status dos projetos (preservados ao regravar)
     if (names.bp) { C.bp = (await table(names.bp)).map(o => { const v = Object.values(o).slice(1); return { cliente: v[0], bp: v[1] }; }).filter(x => x.cliente && x.cliente !== '-'); m.lists.bp = [...new Set(C.bp.map(x => x.bp).filter(Boolean))]; }
-    if (names.projetos) { C.projStatus = {}; for (const o of await table(names.projetos)) { const v = Object.values(o).slice(1); if (v[1]) C.projStatus[norm(v[1])] = v[0]; } }
+    if (names.projetos) {
+      C.projStatus = {}; C.projMeta = {};
+      for (const o of await table(names.projetos)) {
+        const v = Object.values(o).slice(1); if (!v[1]) continue; const k = norm(v[1]); C.projStatus[k] = v[0];
+        // tipo de projeto e margem do DRP (colunas pelo nome; Configs antigos não têm essas colunas)
+        const hk = re => Object.keys(o).find(h => h !== '_row' && re.test(plainTxt(h)));
+        const tk = hk(/^tipo/), mk = hk(/^margem drp/);
+        const tipo = tk && o[tk] != null && String(o[tk]).trim() ? String(o[tk]).trim() : null;
+        let mg = mk ? o[mk] : null; mg = typeof mg === 'number' && isFinite(mg) ? (Math.abs(mg) > 1 ? mg / 100 : mg) : null; // aceita 0,32 ou 32
+        if (tipo || mg != null) C.projMeta[k] = { tipo, margemDrp: mg };
+      }
+      for (const p of m.projects) { const meta = C.projMeta[norm(p.client + '|' + p.name)]; if (meta) { p.tipo = meta.tipo; p.margemDrp = meta.margemDrp; } }
+    }
     // clientes da Config que ainda não existem no Database (ficam disponíveis para novos projetos)
     if (names.clientes) {
       const cfgCli = [];
@@ -1084,10 +1096,14 @@ td.t-pos { color: var(--pos); } td.t-att { color: var(--att); } td.t-neg { color
     const JSZ = JSZipLib || root.JSZip; const zip = await JSZ.loadAsync(C.buf);
     const txt = p => zip.file(p) ? zip.file(p).async('string') : Promise.resolve(null);
     refreshTrib(m);
-    const rewrite = async (name, rowsData, ncols) => { // reescreve a partir da linha 2, mantendo o cabeçalho e o estilo da linha 2
+    const rewrite = async (name, rowsData, ncols, headers) => { // reescreve a partir da linha 2, mantendo o cabeçalho e o estilo da linha 2
       if (!name) return; const sh = parseSheet(await txt(C.sheets[name].path), C.sst);
       const tpl = sh.rows.get(2); const st = c => tpl && tpl.cells.get(c) ? tpl.cells.get(c).s : null;
       const rows = new Map(); for (const [r, row] of sh.rows) if (r < 2) rows.set(r, row);
+      if (headers) { // completa cabeçalhos que faltam (colunas novas em Configs antigos), com o estilo da célula A1
+        const h = rows.get(1) || { attrs: 'r="1"', cells: new Map() }; rows.set(1, h); const a1 = h.cells.get(1); const hs = a1 ? a1.s : null;
+        headers.forEach((t, i) => { const c = i + 1; const x = h.cells.get(c); if (!x || x.v == null || x.v === '') h.cells.set(c, { xml: cellXml(numToCol(c) + '1', hs, t) }); });
+      }
       rowsData.forEach((vals, i) => { const r = i + 2; const cells = new Map(); for (let c = 1; c <= ncols; c++) cells.set(c, { xml: cellXml(numToCol(c) + r, st(c), vals[c - 1]) }); rows.set(r, { attrs: tpl ? tpl.attrs.replace(/\s*hidden="1"/, '') : `r="${r}"`, cells }); });
       for (const [r, row] of sh.rows) if (r >= 2 + rowsData.length) { const cells = new Map(); for (const [ci, x] of row.cells) if (ci > ncols) cells.set(ci, { xml: keepCellXml(x, numToCol(ci) + r, 0) }); if (cells.size) rows.set(r, { attrs: row.attrs, cells }); }
       const last = Math.max(1, ...rows.keys());
@@ -1099,9 +1115,15 @@ td.t-pos { color: var(--pos); } td.t-att { color: var(--att); } td.t-neg { color
       const cl = m.clients.find(c => norm(c.name) === norm(p.client)); const pj = projectOf(m, p.client, p.fields['Projeto']);
       const key = `${cl ? cl.name : p.client}|${pj ? pj.name : p.fields['Projeto']}`;
       const trib = m.hasFunding ? (String(p.fields['Funding'] || '').trim().toLowerCase() === 'sim' ? 'Isento' : 'Tributado') : (pj ? pj.trib : 'Tributado');
-      proj.push([(C.projStatus && C.projStatus[norm(key)]) || 'Ativo', key, trib]); seen.add(norm(key));
+      proj.push([(C.projStatus && C.projStatus[norm(key)]) || 'Ativo', key, trib, pj && pj.tipo || null, pj && pj.margemDrp != null ? pj.margemDrp : null]); seen.add(norm(key));
     }
-    await rewrite(C.names.projetos, proj, 3);
+    // projetos sem contrato que têm tipo ou margem do DRP também ganham linha, para o dado não se perder
+    for (const pj of m.projects) {
+      const key = `${pj.client}|${pj.name}`;
+      if (seen.has(norm(key)) || (!pj.tipo && pj.margemDrp == null)) continue;
+      proj.push([(C.projStatus && C.projStatus[norm(key)]) || 'Ativo', key, pj.trib || 'Tributado', pj.tipo || null, pj.margemDrp != null ? pj.margemDrp : null]); seen.add(norm(key));
+    }
+    await rewrite(C.names.projetos, proj, 5, ['Status', 'Chave (Cliente|Projeto)', 'Tributação', 'Tipo de Projeto', 'Margem DRP']);
     // Clientes x Tabelas: todos os clientes com aba BL no Database
     await rewrite(C.names.clientes, m.clients.filter(c => c.sheet).map(c => [c.name, c.sheet, c.table]), 3);
     // BP por Cliente: mantém os existentes e acrescenta clientes novos
@@ -1303,6 +1325,10 @@ const info = t => `<span class="info" tabindex="0" role="note" aria-label="${esc
 const tribChip = p => (p.trib === 'Isento' ? '<span class="chip acc">Isento</span>' : '<span class="muted">Tributado</span>') + (p.tribConflict ? ' <span class="chip warn" title="Contratos com Funding diferente; a planilha usa o primeiro">conflito</span>' : '');
 const statusChip = s => !s ? '<span class="muted">sem proposta</span>' : `<span class="chip ${/CONFIRMADO|FECHADO/.test(s) ? 'good' : /CANCELADO|PERDIDO/.test(s) ? 'bad' : /CHANCE/.test(s) ? 'warn' : ''}">${esc(s.charAt(0) + s.slice(1).toLowerCase())}</span>`;
 const PROJ_STATUS = ['CONFIRMADO', 'FECHADO']; // contratos que entram na margem projetada
+// tipo do projeto (gravado no Config, aba Projetos). Só Escopo Fechado fatura o saldo do contrato no fim;
+// Time & Material e Staff Augmentation faturam as horas, então a margem projetada fica em 0.
+const TIPOS_PROJETO = ['Escopo Fechado', 'Time & Material', 'Staff Augmentation'];
+const projetaSaldo = p => !p.tipo || p.tipo === 'Escopo Fechado'; // sem tipo informado: mantém a regra de Escopo Fechado
 function projSummary(p) {
   const d = derive(); const rows = d.byProj.get(p.id) || []; const props = d.propsOf(p);
   const yr = S.f.year; const ry = rows.filter(r => r.month.startsWith(yr));
@@ -1318,12 +1344,13 @@ function projSummary(p) {
   const conf = props.filter(x => PROJ_STATUS.includes(String(x.fields['Chance de Conversão'] || '').trim().toUpperCase()));
   const assinConf = conf.reduce((t, x) => t + (typeof x.fields['Valor Assinado'] === 'number' ? x.fields['Valor Assinado'] : 0), 0);
   const usado = sum(rows, 'bruto'); const tax = p.trib === 'Isento' ? 0 : C.taxRate(S.m);
-  const proj = assinConf > 0 ? (() => {
+  const projNA = !projetaSaldo(p);
+  const proj = assinConf > 0 && !projNA ? (() => {
     const receita = assinConf * (1 - tax), custo = sum(rows, 'custoTot'), resultado = receita - custo;
     const saldo = assinConf - usado; // bruto; negativo = consumo acima do assinado (não faturado)
     return { assin: assinConf, n: conf.length, tax, receita, custo, resultado, mb: receita ? resultado / receita : 0, saldo, saldoLiq: receita - sum(rows, 'liq'), saldoImp: saldo * tax };
   })() : null;
-  return { rows, props, assin, usado, bruto: sum(ry, 'bruto'), liq, res, mb: liq ? res / liq : 0, hasLiq: !!liq, proj,
+  return { rows, props, assin, usado, bruto: sum(ry, 'bruto'), liq, res, mb: liq ? res / liq : 0, hasLiq: !!liq, proj, projNA,
     start: starts[0], end: ends[ends.length - 1], status: statusOf(props), profs: profs.size };
 }
 
@@ -1543,7 +1570,7 @@ function viewProject() {
   const finRows = finYears.map(y => { const ms = fin.filter(o => o.mm.startsWith(y));
     return ms.map(o => `<tr><td>${mLabel(o.mm)}</td>${finCells(o)}</tr>`).join('') + (finYears.length > 1 ? `<tr class="sub"><td>Subtotal ${y}</td>${finCells(finSum(ms))}</tr>` : ''); }).join('');
   return `<div class="crumbs"><button data-act="go" data-v="projetos">Projetos</button> / ${esc(p.client)}</div>
-  <div class="phead"><div class="t"><h1>${esc(p.name)}</h1><div class="row">${statusChip(s.status)}${p.trib === 'Isento' ? `<span class="chip acc">Isento de impostos${S.m.hasFunding ? ' (Funding)' : ''}</span>` : '<span class="chip">Tributado</span>'}${p.tribConflict ? '<span class="chip warn">Funding diferente entre contratos</span>' : ''}
+  <div class="phead"><div class="t"><h1>${esc(p.name)}</h1><div class="row">${statusChip(s.status)}<span class="chip">${esc(p.tipo || 'Tipo não informado')}</span>${p.trib === 'Isento' ? `<span class="chip acc">Isento de impostos${S.m.hasFunding ? ' (Funding)' : ''}</span>` : '<span class="chip">Tributado</span>'}${p.tribConflict ? '<span class="chip warn">Funding diferente entre contratos</span>' : ''}
     <span class="muted">${esc(p.client)}${cl && cl.sheet ? ' · aba ' + esc(cl.sheet) : ' · sem aba de billing'}</span></div></div>
     ${ed ? `<div class="row"><button class="btn" data-act="editProject" data-id="${p.id}">Editar projeto</button><button class="btn danger" data-act="delProject" data-id="${p.id}">Excluir</button></div>` : ''}</div>
   <div class="kpis">
@@ -1551,9 +1578,15 @@ function viewProject() {
     <div class="kpi"><div class="l">Consumido (bruto total)${info('Soma do valor bruto de todas as alocações do projeto, em todos os meses e anos.\nBruto = horas executadas × R$/h × fator.\nSaldo = valor assinado − consumido.')}</div><div class="v">${brlC(s.usado)}</div><div class="s">${s.assin ? 'Saldo ' + brlC(s.assin - s.usado) : 'sem valor assinado'}</div></div>
     <div class="kpi"><div class="l">Líquido ${esc(S.f.year)}${info(`Soma do valor líquido das alocações com mês em ${S.f.year} (o ano do filtro).\nLíquido = bruto − impostos (zero de impostos se o projeto for isento).\nResultado = líquido − custo, com custo = horas executadas × custo/h.`)}</div><div class="v">${brlC(s.liq)}</div><div class="s">Resultado ${brlC(s.res)}</div></div>
     <div class="kpi"><div class="l">Margem bruta ${esc(S.f.year)}${info(`Resultado ÷ líquido das alocações de ${S.f.year}. É o mesmo número do "Subtotal ${S.f.year}" do Financeiro mensal; o "Total do projeto" soma todos os anos.\nFaixas: abaixo de 20% vermelho, de 20% a 28,9% amarelo, 29% ou mais verde.\nProf.: profissionais com horas executadas em ${mLabel(S.f.month)}.`)}</div><div class="v ${s.hasLiq ? mbCls(s.mb) : ''}">${s.hasLiq ? pct(s.mb) : '—'}</div><div class="s">${s.profs} prof. em ${mLabel(S.f.month)}</div></div>
-    <div class="kpi"><div class="l">Margem projetada${info(`Margem no fim do contrato${s.end ? ' (' + fmtDate(s.end) + ')' : ''}, considerando que o valor assinado dos contratos CONFIRMADO/FECHADO é faturado inteiro.\nReceita = valor assinado${s.proj && s.proj.tax ? ' − impostos' : ''}${p.trib === 'Isento' ? ' (projeto isento: sem impostos)' : ''}.\nCusto = custo de todas as alocações do projeto, inclusive meses futuros já lançados.\nMargem = (receita − custo) ÷ receita.\nO saldo não consumido não tem custo e entra como resultado; consumo acima do assinado não é faturado e reduz a margem.`)}</div>
-      <div class="v ${s.proj ? mbCls(s.proj.mb) : ''}">${s.proj ? pct(s.proj.mb) : '—'}</div>
-      <div class="s">${!s.proj ? 'sem contrato confirmado' : s.proj.saldo >= 0 ? `+ ${brlC(s.proj.saldoLiq)} de saldo não consumido` : `${brlC(-s.proj.saldo)} acima do assinado`}</div></div></div>
+    <div class="kpi"><div class="l">Margem projetada${info(s.projNA ? `Projeto ${p.tipo}: o cliente paga só as horas consumidas, então o saldo do contrato não é faturado e não existe margem projetada (exibida como 0%). Acompanhe a margem bruta do ano e compare com a Margem DRP.` : `Margem no fim do contrato${s.end ? ' (' + fmtDate(s.end) + ')' : ''}, considerando que o valor assinado dos contratos CONFIRMADO/FECHADO é faturado inteiro.\nReceita = valor assinado${s.proj && s.proj.tax ? ' − impostos' : ''}${p.trib === 'Isento' ? ' (projeto isento: sem impostos)' : ''}.\nCusto = custo de todas as alocações do projeto, inclusive meses futuros já lançados.\nMargem = (receita − custo) ÷ receita.\nO saldo não consumido não tem custo e entra como resultado; consumo acima do assinado não é faturado e reduz a margem.`)}</div>
+      <div class="v ${s.proj ? mbCls(s.proj.mb) : ''}">${s.projNA ? pct(0) : s.proj ? pct(s.proj.mb) : '—'}</div>
+      <div class="s">${s.projNA ? `não se aplica a ${esc(p.tipo)}` : !s.proj ? 'sem contrato confirmado' : s.proj.saldo >= 0 ? `+ ${brlC(s.proj.saldoLiq)} de saldo não consumido` : `${brlC(-s.proj.saldo)} acima do assinado`}</div></div>
+    ${(() => { // Margem DRP: meta informada à mão no projeto (Config, aba Projetos), comparada com a margem de referência do tipo
+      const md = p.margemDrp; const ref = s.proj ? { v: s.proj.mb, l: 'projetada' } : s.hasLiq ? { v: s.mb, l: S.f.year } : null;
+      const pp = md != null && ref ? (ref.v - md) * 100 : null;
+      return `<div class="kpi"><div class="l">Margem DRP${info(`Margem prevista no DRP do projeto, informada à mão em "Editar projeto" e gravada no Config (aba Projetos).\nA comparação usa ${projetaSaldo(p) ? 'a margem projetada (Escopo Fechado)' : `a margem bruta de ${S.f.year} (${p.tipo}: sem margem projetada)`}; positivo = acima do DRP.`)}</div>
+        <div class="v">${md != null ? pct(md) : '—'}</div>
+        <div class="s">${md == null ? 'não informada · edite o projeto' : pp == null ? 'sem margem para comparar' : `${pp >= 0 ? '+' : '−'}${Math.abs(pp).toFixed(1).replace('.', ',')} p.p. vs ${esc(ref.l)}`}</div></div>`; })()}</div>
   ${S.m.hasFunding && p.noProposal ? '<div class="note">Este projeto não tem contrato na aba 2. Propostas. Pela regra da planilha, a tributação vem do campo Funding do contrato; sem contrato, ele fica sempre <b>Tributado</b>.</div>' : ''}
   <section class="card"><header><h2>Contratos e propostas</h2><p>Linhas da aba 2. Propostas</p><span class="spacer"></span>${ed ? `<button class="btn sm" data-act="newProp" data-id="${p.id}">+ Adicionar contrato</button>` : ''}</header>
     <div class="tbl-wrap"><table><thead><tr><th>Proposta</th><th>PowerHouse</th><th>Status</th><th>iStudio</th><th>Pre-sales</th><th>Início</th><th>Fim</th><th>COLT OPT</th>${S.m.hasFunding ? '<th>Funding</th>' : ''}<th class="n">Assinado</th><th></th></tr></thead><tbody>
@@ -1568,7 +1601,8 @@ function viewProject() {
     ${s.proj && fin.length ? (() => { const P = s.proj; const over = P.saldo < 0;
       return `<tr class="proj"><td>${over ? 'Consumo acima do assinado (não faturado)' : 'Saldo não consumido (faturado no fim)'}</td><td class="n"></td><td></td><td class="n">${brl(P.saldo)}</td><td class="n">${brl(P.saldoImp)}</td><td class="n">${brl(P.saldoLiq)}</td><td class="n">${brl(0)}</td><td class="n${cls(P.saldoLiq)}">${brl(P.saldoLiq)}</td><td></td></tr>
       <tr class="tot proj"><td>Total projetado${s.end ? ' · fim ' + esc(fmtDate(s.end)) : ''}</td><td class="n"></td><td></td><td class="n">${brl(P.assin)}</td><td class="n">${brl(P.assin * P.tax)}</td><td class="n">${brl(P.receita)}</td><td class="n">${brl(P.custo)}</td><td class="n${cls(P.resultado)}">${brl(P.resultado)}</td><td class="n">${mbChip(P.mb, !!P.receita)}</td></tr>`; })() : ''}</tbody></table></div>
-    ${s.proj && fin.length ? `<p class="muted" style="margin:8px 0 0;font-size:12px">Projeção: ${s.proj.n} contrato(s) Confirmado/Fechado somando ${brl(s.proj.assin)}, faturados inteiros no fim do projeto.${s.assin > s.proj.assin ? ` Contratos com outro status (${brl(s.assin - s.proj.assin)}) ficam fora da projeção.` : ''}</p>` : ''}</section>
+    ${s.proj && fin.length ? `<p class="muted" style="margin:8px 0 0;font-size:12px">Projeção: ${s.proj.n} contrato(s) Confirmado/Fechado somando ${brl(s.proj.assin)}, faturados inteiros no fim do projeto.${s.assin > s.proj.assin ? ` Contratos com outro status (${brl(s.assin - s.proj.assin)}) ficam fora da projeção.` : ''}</p>` : ''}
+    ${s.projNA && fin.length ? `<p class="muted" style="margin:8px 0 0;font-size:12px">Projeto ${esc(p.tipo)}: sem linhas de projeção, porque o saldo do contrato não é faturado.</p>` : ''}</section>
   <section class="card"><header><h2>Time e alocação</h2><p>Uma linha por profissional por mês (aba ${esc(cl && cl.sheet || '—')})</p><span class="spacer"></span>
     ${edT && cl && cl.sheet ? `<button class="btn sm" data-act="adjProj" data-id="${p.id}">Ajustar horas</button><button class="btn sm" data-act="replicate" data-id="${p.id}">Replicar mês</button><button class="btn sm pri" data-act="newAlloc" data-id="${p.id}">+ Adicionar profissional</button>` : ''}</header>
     ${!cl || !cl.sheet ? `<div class="note">Este cliente ainda não tem aba de billing na planilha. ${ed && canAdmin() ? `<button class="btn sm" data-act="createSheet" data-id="${p.id}">Criar aba de billing para ${esc(p.client)}</button>` : ''}</div>` : `
@@ -1805,6 +1839,8 @@ function modalHtml() {
         <label class="field">Cliente${p ? `<input value="${esc(p.client)}" disabled>` : `<select name="client" data-act-change="clientSel">${allowed.map(c => `<option${c === md.client ? ' selected' : ''}>${esc(c)}</option>`).join('')}${canAdmin() ? '<option value="__new"' + (md.client === '__new' ? ' selected' : '') + '>+ Novo cliente…</option>' : ''}</select>`}</label>
         ${!p ? `<label class="field" id="nc-wrap"${md.client === '__new' ? '' : ' hidden'}>Nome do novo cliente<input name="newClient"></label>` : ''}
         <label class="field">Nome do projeto<input name="name" value="${esc(p ? p.name : '')}"></label>
+        <label class="field">Tipo de projeto<select name="tipo">${p && !p.tipo ? '<option value="" selected>Não informado</option>' : ''}${TIPOS_PROJETO.map(t => `<option${(p ? p.tipo : 'Escopo Fechado') === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        <label class="field">Margem DRP (%)<input name="margemDrp" type="number" step="0.1" min="-100" max="100" placeholder="ex.: 32" value="${p && p.margemDrp != null ? (+(p.margemDrp * 100).toFixed(2)) : ''}"></label>
         <label class="field">${m.hasFunding ? 'Funding (isenta de impostos)' : 'Tributação'}<select name="trib"><option value="Tributado"${!p || p.trib !== 'Isento' ? ' selected' : ''}>${m.hasFunding ? 'Não: tributado' : 'Tributado'}</option><option value="Isento"${p && p.trib === 'Isento' ? ' selected' : ''}>${m.hasFunding ? 'Sim: isento' : 'Isento'}</option></select></label></div>
       ${m.hasFunding && p ? '<div class="note">Na planilha, a isenção vem do campo Funding dos contratos. Mudar aqui atualiza o Funding de todos os contratos deste projeto' + (p.noProposal ? ' e, como ele não tem contrato, cria um contrato com Funding = Sim.' : '.') + '</div>' : ''}
       ${!p ? `<label class="row" id="ns-wrap"${md.client === '__new' ? '' : ' hidden'}><input type="checkbox" name="createSheet" checked> Criar aba de billing (BL_) para o novo cliente a partir do BL_Template</label>` : ''}
@@ -2122,6 +2158,10 @@ async function submitModal(form) {
   const dateErr = o => { if (o['Start Date'] && o['End Date'] && o['End Date'] < o['Start Date']) errs.push('A data de fim é anterior à data de início.'); };
   if (md.kind === 'project') {
     const name = String(o.name || '').trim(); if (!name) errs.push('Informe o nome do projeto.');
+    const mgTxt = String(o.margemDrp == null ? '' : o.margemDrp).trim().replace(',', '.'); const mgPct = mgTxt === '' ? null : +mgTxt;
+    if (mgTxt !== '' && (!isFinite(mgPct) || mgPct < -100 || mgPct > 100)) errs.push('Margem DRP: informe um percentual entre −100 e 100 (ex.: 32).');
+    const tipo = TIPOS_PROJETO.includes(o.tipo) ? o.tipo : null; const margemDrp = mgPct == null ? null : Math.round(mgPct * 100) / 10000;
+    const metaTxt = `${tipo || 'tipo não informado'}${margemDrp != null ? ' · Margem DRP ' + pct(margemDrp) : ''}`;
     if (md.id) {
       const p = m.projects.find(x => x.id === md.id);
       if (m.projects.some(x => x !== p && norm(x.client) === norm(p.client) && norm(x.name) === norm(name))) errs.push('Já existe um projeto com esse nome neste cliente.');
@@ -2132,8 +2172,9 @@ async function submitModal(form) {
         m.proposals.forEach(x => { if (norm(x.client) === norm(p.client) && norm(x.fields['Projeto']) === norm(old)) { x.fields['Projeto'] = name; x.dirty = true; } });
       }
       const tribCh = p.trib !== o.trib; p.name = name; p.trib = o.trib;
+      const metaCh = (p.tipo || null) !== tipo || (p.margemDrp == null ? null : p.margemDrp) !== margemDrp; p.tipo = tipo; p.margemDrp = margemDrp;
       if (m.hasFunding && (tribCh || p.tribConflict)) applyFunding(p, o.trib);
-      touch(`Projeto editado: ${p.client} · ${old}${old !== name ? ' → ' + name : ''}${tribCh ? ' · tributação ' + o.trib : ''}`);
+      touch(`Projeto editado: ${p.client} · ${old}${old !== name ? ' → ' + name : ''}${tribCh ? ' · tributação ' + o.trib : ''}${metaCh ? ' · ' + metaTxt : ''}`);
     } else {
       let clientName = o.client;
       if (clientName === '__new') {
@@ -2144,11 +2185,11 @@ async function submitModal(form) {
       dateErr(o);
       if (errs.length) return showErrs(errs);
       if (o.client === '__new') { const c = { id: C.nid('c'), name: clientName, sheet: null, table: null, status: 'Ativo', isNew: true }; m.clients.push(c); m.lists.clientes.push(clientName); if (o.createSheet) makeSheet(c); }
-      const p = { id: C.nid('j'), client: clientName, name, trib: o.trib }; m.projects.push(p);
+      const p = { id: C.nid('j'), client: clientName, name, trib: o.trib, tipo, margemDrp }; m.projects.push(p);
       const pf = propFrom(o);
       if (m.hasFunding) pf['Funding'] = o.trib === 'Isento' ? 'Sim' : 'Não';
       if (o['Proposta'] || o['Valor Assinado'] || o['Start Date'] || (m.hasFunding && o.trib === 'Isento')) m.proposals.push({ id: C.nid('p'), client: clientName, fields: { ...pf, 'Cliente': clientName, 'Projeto': name, 'Proposta': pf['Proposta'] || `${clientName} - ${name}` }, orig: null, dirty: true });
-      touch(`Projeto criado: ${clientName} · ${name}`); S.projId = p.id; S.view = 'projeto';
+      touch(`Projeto criado: ${clientName} · ${name} · ${metaTxt}`); S.projId = p.id; S.view = 'projeto';
     }
   } else if (md.kind === 'prop') {
     dateErr(o); if (errs.length) return showErrs(errs);

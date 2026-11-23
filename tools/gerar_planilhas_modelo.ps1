@@ -180,7 +180,7 @@ $LEIA = @(
   @('Revenue State', 'Status usados em "Chance de conversão" do contrato e em "Status da receita" da alocação.', 'Operations Manager'),
   @('Status da Proposta', 'Lista de status de proposta (opcional).', 'Operations Manager'),
   @('PowerHouse', 'Lista de PowerHouses que aparecem no cadastro de contratos.', 'Business Manager'),
-  @('Projetos', 'NÃO EDITAR: o app mantém (uma linha por contrato, com a tributação).', 'App'),
+  @('Projetos', 'NÃO EDITAR: o app mantém (uma linha por contrato, com tributação, tipo de projeto e Margem DRP informados ao criar ou editar o projeto).', 'App'),
   @('Clientes x Tabelas', 'Clientes disponíveis no app. Pode cadastrar clientes aqui (só a coluna Cliente); o app preenche Aba e Tabela quando cria a aba de billing.', 'App / Business Manager'),
   @('BP por Cliente', 'Business Partner responsável por cada cliente.', 'Business Manager')
 )
@@ -200,7 +200,7 @@ Write-Xlsx (Join-Path $Saida 'Config.xlsx') @(
   @{ name = 'Revenue State'; xml = (ListSheet 'Revenue State' $REVENUE) },
   @{ name = 'Status da Proposta'; xml = (ListSheet 'Status da Proposta' @()) },
   @{ name = 'PowerHouse'; xml = (ListSheet 'PowerHouse' @()) },
-  @{ name = 'Projetos'; xml = (GridSheet @('Status', 'Chave (Cliente|Projeto)', 'Tributação') @() @(12, 50, 14)) },
+  @{ name = 'Projetos'; xml = (GridSheet @('Status', 'Chave (Cliente|Projeto)', 'Tributação', 'Tipo de Projeto', 'Margem DRP') @() @(12, 50, 14, 20, 14)) },
   @{ name = 'Clientes x Tabelas'; xml = (GridSheet @('Cliente', 'Aba', 'Tabela') @() @(30, 30, 30)) },
   @{ name = 'BP por Cliente'; xml = (GridSheet @('Cliente', 'BP') @() @(30, 30)) }
 )

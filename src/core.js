@@ -702,7 +702,19 @@
       for (const o of await table(names.dias)) { const v = Object.values(o).slice(1); const i = MES.indexOf(norm(v[0])); if (i >= 0 && +v[1] > 0) m.workdays[i + 1] = { dias: +v[1], horas: +v[2] }; } }
     // BP por cliente e status dos projetos (preservados ao regravar)
     if (names.bp) { C.bp = (await table(names.bp)).map(o => { const v = Object.values(o).slice(1); return { cliente: v[0], bp: v[1] }; }).filter(x => x.cliente && x.cliente !== '-'); m.lists.bp = [...new Set(C.bp.map(x => x.bp).filter(Boolean))]; }
-    if (names.projetos) { C.projStatus = {}; for (const o of await table(names.projetos)) { const v = Object.values(o).slice(1); if (v[1]) C.projStatus[norm(v[1])] = v[0]; } }
+    if (names.projetos) {
+      C.projStatus = {}; C.projMeta = {};
+      for (const o of await table(names.projetos)) {
+        const v = Object.values(o).slice(1); if (!v[1]) continue; const k = norm(v[1]); C.projStatus[k] = v[0];
+        // tipo de projeto e margem do DRP (colunas pelo nome; Configs antigos não têm essas colunas)
+        const hk = re => Object.keys(o).find(h => h !== '_row' && re.test(plainTxt(h)));
+        const tk = hk(/^tipo/), mk = hk(/^margem drp/);
+        const tipo = tk && o[tk] != null && String(o[tk]).trim() ? String(o[tk]).trim() : null;
+        let mg = mk ? o[mk] : null; mg = typeof mg === 'number' && isFinite(mg) ? (Math.abs(mg) > 1 ? mg / 100 : mg) : null; // aceita 0,32 ou 32
+        if (tipo || mg != null) C.projMeta[k] = { tipo, margemDrp: mg };
+      }
+      for (const p of m.projects) { const meta = C.projMeta[norm(p.client + '|' + p.name)]; if (meta) { p.tipo = meta.tipo; p.margemDrp = meta.margemDrp; } }
+    }
     // clientes da Config que ainda não existem no Database (ficam disponíveis para novos projetos)
     if (names.clientes) {
       const cfgCli = [];
@@ -722,10 +734,14 @@
     const JSZ = JSZipLib || root.JSZip; const zip = await JSZ.loadAsync(C.buf);
     const txt = p => zip.file(p) ? zip.file(p).async('string') : Promise.resolve(null);
     refreshTrib(m);
-    const rewrite = async (name, rowsData, ncols) => { // reescreve a partir da linha 2, mantendo o cabeçalho e o estilo da linha 2
+    const rewrite = async (name, rowsData, ncols, headers) => { // reescreve a partir da linha 2, mantendo o cabeçalho e o estilo da linha 2
       if (!name) return; const sh = parseSheet(await txt(C.sheets[name].path), C.sst);
       const tpl = sh.rows.get(2); const st = c => tpl && tpl.cells.get(c) ? tpl.cells.get(c).s : null;
       const rows = new Map(); for (const [r, row] of sh.rows) if (r < 2) rows.set(r, row);
+      if (headers) { // completa cabeçalhos que faltam (colunas novas em Configs antigos), com o estilo da célula A1
+        const h = rows.get(1) || { attrs: 'r="1"', cells: new Map() }; rows.set(1, h); const a1 = h.cells.get(1); const hs = a1 ? a1.s : null;
+        headers.forEach((t, i) => { const c = i + 1; const x = h.cells.get(c); if (!x || x.v == null || x.v === '') h.cells.set(c, { xml: cellXml(numToCol(c) + '1', hs, t) }); });
+      }
       rowsData.forEach((vals, i) => { const r = i + 2; const cells = new Map(); for (let c = 1; c <= ncols; c++) cells.set(c, { xml: cellXml(numToCol(c) + r, st(c), vals[c - 1]) }); rows.set(r, { attrs: tpl ? tpl.attrs.replace(/\s*hidden="1"/, '') : `r="${r}"`, cells }); });
       for (const [r, row] of sh.rows) if (r >= 2 + rowsData.length) { const cells = new Map(); for (const [ci, x] of row.cells) if (ci > ncols) cells.set(ci, { xml: keepCellXml(x, numToCol(ci) + r, 0) }); if (cells.size) rows.set(r, { attrs: row.attrs, cells }); }
       const last = Math.max(1, ...rows.keys());
@@ -737,9 +753,15 @@
       const cl = m.clients.find(c => norm(c.name) === norm(p.client)); const pj = projectOf(m, p.client, p.fields['Projeto']);
       const key = `${cl ? cl.name : p.client}|${pj ? pj.name : p.fields['Projeto']}`;
       const trib = m.hasFunding ? (String(p.fields['Funding'] || '').trim().toLowerCase() === 'sim' ? 'Isento' : 'Tributado') : (pj ? pj.trib : 'Tributado');
-      proj.push([(C.projStatus && C.projStatus[norm(key)]) || 'Ativo', key, trib]); seen.add(norm(key));
+      proj.push([(C.projStatus && C.projStatus[norm(key)]) || 'Ativo', key, trib, pj && pj.tipo || null, pj && pj.margemDrp != null ? pj.margemDrp : null]); seen.add(norm(key));
     }
-    await rewrite(C.names.projetos, proj, 3);
+    // projetos sem contrato que têm tipo ou margem do DRP também ganham linha, para o dado não se perder
+    for (const pj of m.projects) {
+      const key = `${pj.client}|${pj.name}`;
+      if (seen.has(norm(key)) || (!pj.tipo && pj.margemDrp == null)) continue;
+      proj.push([(C.projStatus && C.projStatus[norm(key)]) || 'Ativo', key, pj.trib || 'Tributado', pj.tipo || null, pj.margemDrp != null ? pj.margemDrp : null]); seen.add(norm(key));
+    }
+    await rewrite(C.names.projetos, proj, 5, ['Status', 'Chave (Cliente|Projeto)', 'Tributação', 'Tipo de Projeto', 'Margem DRP']);
     // Clientes x Tabelas: todos os clientes com aba BL no Database
     await rewrite(C.names.clientes, m.clients.filter(c => c.sheet).map(c => [c.name, c.sheet, c.table]), 3);
     // BP por Cliente: mantém os existentes e acrescenta clientes novos
