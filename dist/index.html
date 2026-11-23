@@ -315,6 +315,11 @@ table.dlist td { padding: 5px 8px; } td.b, .n.b { font-weight: 600; }
 .dsearch { font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: min(260px, 100%); }
 .muted.sm { font-size: 11px; }
 th.sort { cursor: pointer; user-select: none; } th.sort:hover, th.sort.on { color: var(--ink); }
+/* "i" com a explicação de como o número é composto (hover ou foco pelo teclado) */
+.info { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: auto; flex: none; border: 1px solid currentColor; font: 700 10px/1 var(--mono); text-transform: none; cursor: help; opacity: .8; }
+.info:hover, .info:focus { opacity: 1; outline: none; background: var(--ink); color: var(--surface); }
+.info::after { content: attr(data-tip); display: none; position: absolute; top: calc(100% + 6px); right: -1px; z-index: 60; width: 280px; padding: 10px 12px; background: var(--gray-750); color: #fff; font: 400 12px/1.45 var(--font); letter-spacing: 0; text-align: left; white-space: pre-line; pointer-events: none; }
+.info:hover::after, .info:focus::after { display: block; }
 table.heat th, table.heat td { padding: 5px 4px; text-align: center; } table.heat td.hl { text-align: left; white-space: nowrap; padding-right: 10px; }
 table.heat td.hc { font: 11px/1.2 var(--mono); min-width: 42px; border: 1px solid var(--surface); }
 table.heat td.hpos { background: var(--pos-bg); color: var(--pos); } table.heat td.hatt { background: var(--att-bg); color: var(--att); } table.heat td.hneg { background: var(--neg-bg); color: var(--neg); font-weight: 600; }
@@ -1271,6 +1276,14 @@ const statusOf = props => {
   for (const k of ['CONFIRMADO', 'FECHADO', 'CHANCE ALTA', 'CHANCE MÉDIA', 'CHANCE BAIXA', 'PIPELINE', 'PERDIDO', 'CANCELADO']) if (st.includes(k)) return k;
   return st[0] || '';
 };
+// colunas ordenáveis da tabela Time e alocação (valor usado na comparação)
+const nOrNull = v => (v == null || v === '' || !isFinite(+v) ? null : +v);
+const TEAM_SORT = {
+  month: { v: r => r.month }, prof: { v: r => r.a.fields['Profissional'] }, papel: { v: r => r.a.fields['Papel'] }, sen: { v: r => { const i = SEN_ORDER.indexOf(plain(r.a.fields['Senioridade'])); return i < 0 ? r.a.fields['Senioridade'] : i; } }, ist: { v: r => r.a.fields['iStudio'] },
+  hp: { v: r => nOrNull(r.a.fields['Horas Provisionadas']) }, he: { v: r => nOrNull(r.a.fields['Horas Executadas']) }, rate: { v: r => nOrNull(r.a.fields['R$/H']) }, cost: { v: r => nOrNull(r.a.fields['Custo Profissional']) },
+  bruto: { v: r => r.k.bruto }, liq: { v: r => r.k.liq }, res: { v: r => r.k.res }, mb: { v: r => (r.k.liq ? r.k.mb : null) },
+};
+const info = t => `<span class="info" tabindex="0" role="note" aria-label="${esc(t)}" data-tip="${esc(t)}">i</span>`;
 const tribChip = p => (p.trib === 'Isento' ? '<span class="chip acc">Isento</span>' : '<span class="muted">Tributado</span>') + (p.tribConflict ? ' <span class="chip warn" title="Contratos com Funding diferente; a planilha usa o primeiro">conflito</span>' : '');
 const statusChip = s => !s ? '<span class="muted">sem proposta</span>' : `<span class="chip ${/CONFIRMADO|FECHADO/.test(s) ? 'good' : /CANCELADO|PERDIDO/.test(s) ? 'bad' : /CHANCE/.test(s) ? 'warn' : ''}">${esc(s.charAt(0) + s.slice(1).toLowerCase())}</span>`;
 function projSummary(p) {
@@ -1460,10 +1473,10 @@ function viewProjects() {
   const t = list.reduce((a, x) => (a.as += x.s.assin, a.us += x.s.assin ? x.s.usado : 0, a.b += x.s.bruto, a.l += x.s.liq, a.r += x.s.res, a), { as: 0, us: 0, b: 0, l: 0, r: 0 });
   return `<div class="row" style="justify-content:space-between"><h1>Projetos</h1>${S.m.clients.some(c => canProject(c.name)) || canAdmin() ? '<button class="btn pri" data-act="newProject">+ Novo projeto</button>' : ''}</div>
   <div class="kpis">
-    <div class="kpi"><div class="l">Projetos listados</div><div class="v">${list.length}</div><div class="s">${list.filter(x => x.s.bruto > 0).length} com receita em ${esc(S.f.year)}</div></div>
-    <div class="kpi"><div class="l">Valor assinado</div><div class="v">${brlC(t.as)}</div><div class="s">contratos com valor informado</div></div>
-    <div class="kpi"><div class="l">Saldo contratual</div><div class="v${cls(t.as - t.us)}">${brlC(t.as - t.us)}</div><div class="s">assinado − consumido</div></div>
-    <div class="kpi"><div class="l">Líquido ${esc(S.f.year)}</div><div class="v">${brlC(t.l)}</div><div class="s">MB ${pct(t.l ? t.r / t.l : 0)}</div></div></div>
+    <div class="kpi"><div class="l">Projetos listados${info(`Projetos que aparecem na lista abaixo com os filtros e a busca atuais.\n"Com receita em ${S.f.year}": projetos com valor bruto maior que zero em ${S.f.year}.`)}</div><div class="v">${list.length}</div><div class="s">${list.filter(x => x.s.bruto > 0).length} com receita em ${esc(S.f.year)}</div></div>
+    <div class="kpi"><div class="l">Valor assinado${info('Soma do Valor Assinado dos contratos dos projetos listados (aba 2. Propostas), sem filtro de período.')}</div><div class="v">${brlC(t.as)}</div><div class="s">contratos com valor informado</div></div>
+    <div class="kpi"><div class="l">Saldo contratual${info('Valor assinado − consumido dos projetos listados.\nConsumido = valor bruto de todas as alocações, em todos os meses e anos. Projetos sem valor assinado ficam de fora.')}</div><div class="v${cls(t.as - t.us)}">${brlC(t.as - t.us)}</div><div class="s">assinado − consumido</div></div>
+    <div class="kpi"><div class="l">Líquido ${esc(S.f.year)}${info(`Soma do valor líquido (bruto − impostos) dos projetos listados nos meses de ${S.f.year}.\nMB = resultado ÷ líquido no mesmo ano, com resultado = líquido − custo.`)}</div><div class="v">${brlC(t.l)}</div><div class="s">MB ${pct(t.l ? t.r / t.l : 0)}</div></div></div>
   <section class="card"><div class="filters" style="margin-bottom:12px">
     <label class="field" style="flex:1;min-width:200px">Buscar<input type="search" data-bind="pf.q" value="${esc(pf.q)}" placeholder="Projeto ou cliente"></label>
     <label class="field">Cliente<select data-bind="pf.client"><option value="">Todos</option>${clients.map(c => `<option${c === pf.client ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
@@ -1483,7 +1496,16 @@ function viewProject() {
   const ed = canProject(p.client), edT = canTeam(p.client);
   const months = [...new Set(s.rows.map(r => r.month))].sort();
   if (S.teamMonth !== 'all' && !months.includes(S.teamMonth)) S.teamMonth = months.includes(S.f.month) ? S.f.month : 'all';
-  const tr = (S.teamMonth === 'all' ? s.rows : s.rows.filter(r => r.month === S.teamMonth)).slice().sort((a, b) => a.month.localeCompare(b.month) || String(a.a.fields['Profissional'] || '').localeCompare(String(b.a.fields['Profissional'] || '')));
+  // ordenação da tabela Time e alocação: clique no cabeçalho alterna crescente / decrescente (padrão: mês e profissional)
+  const ts = S.teamSort || { k: 'month', dir: 1 }; const tk = TEAM_SORT[ts.k] || TEAM_SORT.month;
+  const byDefault = (a, b) => a.month.localeCompare(b.month) || String(a.a.fields['Profissional'] || '').localeCompare(String(b.a.fields['Profissional'] || ''), 'pt');
+  const cmpVal = (x, y) => { const ex = x == null || x === '', ey = y == null || y === ''; if (ex || ey) return ex && ey ? 0 : ex ? 1 : -1; return typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'pt', { numeric: true, sensitivity: 'base' }); };
+  const tr = (S.teamMonth === 'all' ? s.rows : s.rows.filter(r => r.month === S.teamMonth)).slice().sort((a, b) => {
+    const va = tk.v(a), vb = tk.v(b); const ea = va == null || va === '', eb = vb == null || vb === '';
+    if (ea || eb) return ea && eb ? byDefault(a, b) : ea ? 1 : -1; // vazios sempre no fim
+    return (cmpVal(va, vb) * ts.dir) || byDefault(a, b);
+  });
+  const sth = (k, label, n) => `<th class="sort${n ? ' n' : ''}${ts.k === k ? ' on' : ''}" data-act="teamSort" data-k="${k}" title="Ordenar por ${esc(label)}" aria-sort="${ts.k === k ? (ts.dir > 0 ? 'ascending' : 'descending') : 'none'}">${esc(label)}${ts.k === k ? (ts.dir > 0 ? ' ↑' : ' ↓') : ''}</th>`;
   const tt = tr.reduce((t, r) => (t.h += +r.a.fields['Horas Executadas'] || 0, t.b += r.k.bruto, t.l += r.k.liq, t.c += r.k.custoTot, t.r += r.k.res, t), { h: 0, b: 0, l: 0, c: 0, r: 0 });
   const fin = months.map(mm => { const a = s.rows.filter(r => r.month === mm); const o = a.reduce((t, r) => (t.h += +r.a.fields['Horas Executadas'] || 0, t.b += r.k.bruto, t.i += r.k.imp, t.l += r.k.liq, t.c += r.k.custoTot, t.r += r.k.res, t), { h: 0, b: 0, i: 0, l: 0, c: 0, r: 0 }); o.n = new Set(a.filter(r => (+r.a.fields['Horas Executadas'] || 0) > 0).map(r => r.a.fields['Profissional'])).size; o.mm = mm; return o; });
   const finSum = list => list.reduce((t, o) => (t.h += o.h, t.b += o.b, t.i += o.i, t.l += o.l, t.c += o.c, t.r += o.r, t), { h: 0, b: 0, i: 0, l: 0, c: 0, r: 0 });
@@ -1498,10 +1520,10 @@ function viewProject() {
     <span class="muted">${esc(p.client)}${cl && cl.sheet ? ' · aba ' + esc(cl.sheet) : ' · sem aba de billing'}</span></div></div>
     ${ed ? `<div class="row"><button class="btn" data-act="editProject" data-id="${p.id}">Editar projeto</button><button class="btn danger" data-act="delProject" data-id="${p.id}">Excluir</button></div>` : ''}</div>
   <div class="kpis">
-    <div class="kpi"><div class="l">Valor assinado</div><div class="v">${s.assin ? brlC(s.assin) : '—'}</div><div class="s">${s.props.length} contrato(s)</div></div>
-    <div class="kpi"><div class="l">Consumido (bruto total)</div><div class="v">${brlC(s.usado)}</div><div class="s">${s.assin ? 'Saldo ' + brlC(s.assin - s.usado) : 'sem valor assinado'}</div></div>
-    <div class="kpi"><div class="l">Líquido ${esc(S.f.year)}</div><div class="v">${brlC(s.liq)}</div><div class="s">Resultado ${brlC(s.res)}</div></div>
-    <div class="kpi"><div class="l">Margem bruta ${esc(S.f.year)}</div><div class="v ${s.hasLiq ? mbCls(s.mb) : ''}">${s.hasLiq ? pct(s.mb) : '—'}</div><div class="s">${s.profs} prof. em ${mLabel(S.f.month)}</div></div></div>
+    <div class="kpi"><div class="l">Valor assinado${info('Soma do Valor Assinado de todos os contratos deste projeto (aba 2. Propostas), sem filtro de período.')}</div><div class="v">${s.assin ? brlC(s.assin) : '—'}</div><div class="s">${s.props.length} contrato(s)</div></div>
+    <div class="kpi"><div class="l">Consumido (bruto total)${info('Soma do valor bruto de todas as alocações do projeto, em todos os meses e anos.\nBruto = horas executadas × R$/h × fator.\nSaldo = valor assinado − consumido.')}</div><div class="v">${brlC(s.usado)}</div><div class="s">${s.assin ? 'Saldo ' + brlC(s.assin - s.usado) : 'sem valor assinado'}</div></div>
+    <div class="kpi"><div class="l">Líquido ${esc(S.f.year)}${info(`Soma do valor líquido das alocações com mês em ${S.f.year} (o ano do filtro).\nLíquido = bruto − impostos (zero de impostos se o projeto for isento).\nResultado = líquido − custo, com custo = horas executadas × custo/h.`)}</div><div class="v">${brlC(s.liq)}</div><div class="s">Resultado ${brlC(s.res)}</div></div>
+    <div class="kpi"><div class="l">Margem bruta ${esc(S.f.year)}${info(`Resultado ÷ líquido das alocações de ${S.f.year}. É o mesmo número do "Subtotal ${S.f.year}" do Financeiro mensal; o "Total do projeto" soma todos os anos.\nFaixas: abaixo de 20% vermelho, de 20% a 28,9% amarelo, 29% ou mais verde.\nProf.: profissionais com horas executadas em ${mLabel(S.f.month)}.`)}</div><div class="v ${s.hasLiq ? mbCls(s.mb) : ''}">${s.hasLiq ? pct(s.mb) : '—'}</div><div class="s">${s.profs} prof. em ${mLabel(S.f.month)}</div></div></div>
   ${S.m.hasFunding && p.noProposal ? '<div class="note">Este projeto não tem contrato na aba 2. Propostas. Pela regra da planilha, a tributação vem do campo Funding do contrato; sem contrato, ele fica sempre <b>Tributado</b>.</div>' : ''}
   <section class="card"><header><h2>Contratos e propostas</h2><p>Linhas da aba 2. Propostas</p><span class="spacer"></span>${ed ? `<button class="btn sm" data-act="newProp" data-id="${p.id}">+ Adicionar contrato</button>` : ''}</header>
     <div class="tbl-wrap"><table><thead><tr><th>Proposta</th><th>PowerHouse</th><th>Status</th><th>iStudio</th><th>Pre-sales</th><th>Início</th><th>Fim</th><th>COLT OPT</th>${S.m.hasFunding ? '<th>Funding</th>' : ''}<th class="n">Assinado</th><th></th></tr></thead><tbody>
@@ -1517,7 +1539,7 @@ function viewProject() {
     ${edT && cl && cl.sheet ? `<button class="btn sm" data-act="adjProj" data-id="${p.id}">Ajustar horas</button><button class="btn sm" data-act="replicate" data-id="${p.id}">Replicar mês</button><button class="btn sm pri" data-act="newAlloc" data-id="${p.id}">+ Adicionar profissional</button>` : ''}</header>
     ${!cl || !cl.sheet ? `<div class="note">Este cliente ainda não tem aba de billing na planilha. ${ed && canAdmin() ? `<button class="btn sm" data-act="createSheet" data-id="${p.id}">Criar aba de billing para ${esc(p.client)}</button>` : ''}</div>` : `
     <div class="mchips" style="margin-bottom:10px"><button class="mchip${S.teamMonth === 'all' ? ' on' : ''}" data-act="tm" data-m="all">Todos os meses</button>${months.map(mm => `<button class="mchip${S.teamMonth === mm ? ' on' : ''}" data-act="tm" data-m="${mm}">${mLabel(mm)}</button>`).join('')}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Mês</th><th>Profissional</th><th>Papel</th><th>Senioridade</th><th>iStudio</th><th class="n">H. prov.</th><th class="n">H. exec.</th><th class="n">R$/h</th><th class="n">Custo/h</th><th class="n">Bruto</th><th class="n">Líquido</th><th class="n">Resultado</th><th class="n">MB</th><th></th></tr></thead><tbody>
+    <div class="tbl-wrap"><table><thead><tr>${sth('month', 'Mês')}${sth('prof', 'Profissional')}${sth('papel', 'Papel')}${sth('sen', 'Senioridade')}${sth('ist', 'iStudio')}${sth('hp', 'H. prov.', 1)}${sth('he', 'H. exec.', 1)}${sth('rate', 'R$/h', 1)}${sth('cost', 'Custo/h', 1)}${sth('bruto', 'Bruto', 1)}${sth('liq', 'Líquido', 1)}${sth('res', 'Resultado', 1)}${sth('mb', 'MB', 1)}<th></th></tr></thead><tbody>
     ${tr.map(r => { const F = r.a.fields; return `<tr><td>${mLabel(r.month)}</td><td>${esc(F['Profissional'])}${r.a.mult && r.a.mult !== 1 ? ` <span class="chip warn" title="Fator aplicado ao valor bruto">×${String(r.a.mult).replace('.', ',')}</span>` : ''}${r.a.brutoFixed != null ? ' <span class="chip warn" title="Valor bruto digitado na planilha">valor fixo</span>' : ''}</td><td>${esc(F['Papel'])}</td><td>${esc(F['Senioridade'])}</td><td>${esc(F['iStudio'])}</td>
       <td class="n">${num(F['Horas Provisionadas'])}</td><td class="n">${num(F['Horas Executadas'])}</td><td class="n">${brl2(F['R$/H'])}</td><td class="n">${brl2(F['Custo Profissional'])}</td>
       <td class="n">${brl(r.k.bruto)}</td><td class="n">${brl(r.k.liq)}</td><td class="n${cls(r.k.res)}">${brl(r.k.res)}</td><td class="n">${mbChip(r.k.mb, !!r.k.liq)}</td>
@@ -1968,6 +1990,7 @@ const A = {
   open: el => { S.projId = el.dataset.id; S.view = 'projeto'; S.teamMonth = 'all'; render(); window.scrollTo(0, 0); },
   swap: async () => { if (S.lock && S.lock.mine) await releaseLock(); if (S.src && !S.changes.length) { S.m = null; S.src = null; render(); return; } if (S.changes.length) { S.modal = { kind: 'confirm', title: 'Trocar arquivo', html: `Há ${S.changes.length} alteração(ões) não exportada(s) que serão perdidas.`, ok: 'Descartar e trocar', onOk: () => { S.m = null; S.src = null; S.changes = []; render(); } }; renderOverlays(); } else { S.m = null; render(); } },
   drpInfo: () => { S.modal = { kind: 'drp' }; renderOverlays(); },
+  teamSort: el => { const k = el.dataset.k; const cur = S.teamSort || { k: 'month', dir: 1 }; S.teamSort = { k, dir: cur.k === k ? -cur.dir : 1 }; render(); },
   close: () => { if (S.modal && S.modal.first) { toast('Cadastre o primeiro administrador para continuar.'); return; } S.modal = null; renderOverlays(); },
   closeBg: (el, e) => { if (e.target === el) A.close(); },
   tm: el => { S.teamMonth = el.dataset.m; render(); },
