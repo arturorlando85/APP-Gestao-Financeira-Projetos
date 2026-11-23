@@ -2,7 +2,7 @@
   Equivalente ao build.py para máquinas sem Python.
     src/template.html + src/core.js -> dist/index.html (JSZip via CDN)
                                     -> dist/SafeHarbor_Financeiro.html (JSZip embutido)
-                                    -> pacote-nova-pod/Gestao_Financeira_Projetos.html (nome neutro, para novas PODs)
+                                    -> pacote-nova-pod/Financeiro/Gestao_Financeira_Projetos.html (nome neutro, para novas PODs)
   O JSZip vem de node_modules (npm install) ou, se não houver, do dist/SafeHarbor_Financeiro.html atual.
   Uso: powershell -ExecutionPolicy Bypass -File tools\build.ps1
 #>
@@ -35,4 +35,4 @@ $local = $page.Replace($CDN, $jszip).Replace($TITLE, '<title>Safe Harbor Finance
 $pod = $local.Replace('<title>Safe Harbor Financeiro (local)</title>', '<title>Gestão Financeira de Projetos</title>').
   Replace('<b>Safe Harbor</b>Controle financeiro · GPOD', '<b>Gestão Financeira</b>Controle financeiro de projetos').
   Replace('<h1>Safe Harbor · Controle financeiro de projetos</h1>', '<h1>Gestão Financeira · Controle financeiro de projetos</h1>')
-if (Test-Path (Join-Path $root 'pacote-nova-pod')) { & $write 'pacote-nova-pod\Gestao_Financeira_Projetos.html' $pod }
+if (Test-Path (Join-Path $root 'pacote-nova-pod\Financeiro')) { & $write 'pacote-nova-pod\Financeiro\Gestao_Financeira_Projetos.html' $pod }

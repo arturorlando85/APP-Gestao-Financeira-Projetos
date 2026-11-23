@@ -1,0 +1,32 @@
+GESTÃO FINANCEIRA DE PROJETOS · PACOTE PARA NOVA POD
+====================================================
+
+Tudo fica dentro da pasta Financeiro
+------------------------------------
+Financeiro/
+  Gestao_Financeira_Projetos.html      O app. Abra no Chrome ou no Edge para computador.
+  Database.xlsx                        Base de dados vazia (contratos e abas de billing BL_).
+  Config.xlsx                          Regras: impostos, dias úteis e listas.
+  Guia_do_Time_Gestao_Financeira.pdf   Guia de uso para o time (padrão AI/R).
+  LEIA-ME.txt                          Este arquivo.
+
+Não vem no pacote: a planilha DRP, fornecida pela gestão (ex.: DRP AIR BR V20260925.xlsx).
+Salve-a nesta mesma pasta. É dela que o app tira Innovation Studios, perfis, custos e
+ratecards (aba Custo Referência).
+
+Primeiros passos
+----------------
+1. Copie a pasta "Financeiro" inteira para o SharePoint da POD.
+2. Salve dentro dela a versão mais atual do DRP. Deixe só um DRP na pasta.
+3. Abra o Config.xlsx no Excel, confirme a aba "Impostos" e revise "Dias Uteis". Feche o Excel.
+4. Sincronize a pasta pelo OneDrive, abra o Gestao_Financeira_Projetos.html que está nela e
+   clique em "Conectar pasta Financeiro", escolhendo esta mesma pasta.
+   O app confere o DRP toda vez que é aberto e mostra a versão em uso.
+5. Clique em "Editar", vá em Projetos > "+ Novo projeto" e crie o primeiro cliente e projeto.
+
+O app cria nesta pasta, sozinho: _safeharbor.lock, _backups_safeharbor/ e _safeharbor_config/.
+Não apague esses itens.
+
+Quando a gestão enviar uma nova versão do DRP, substitua o arquivo antigo nesta pasta.
+Não renomeie abas, tabelas ou cabeçalhos das planilhas: o app os encontra pelo nome.
+Detalhes no guia em PDF.
