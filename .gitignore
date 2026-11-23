@@ -11,6 +11,11 @@ _safeharbor.lock
 tests/fixtures/*
 !tests/fixtures/README.md
 
+# Exceção: modelos ZERADOS do pacote da nova POD (sem dado real; gerados por tools/gerar_planilhas_modelo.ps1).
+# Só estes dois caminhos exatos; qualquer outra planilha, inclusive o DRP, continua bloqueada.
+!/pacote-nova-pod/Financeiro/Database.xlsx
+!/pacote-nova-pod/Financeiro/Config.xlsx
+
 # Saídas dos testes (capturas de tela contêm dados)
 tests/out/
 *.png
