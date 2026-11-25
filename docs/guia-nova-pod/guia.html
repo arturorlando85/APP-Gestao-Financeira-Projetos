@@ -122,7 +122,7 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
     </div>
     <div class="meta">
       <b>PARA</b><span>Novas PODs: Operations, Business e Delivery Managers e Delivery Leaders</span>
-      <b>VERSÃO</b><span>1.1 · novembro de 2026</span>
+      <b>VERSÃO</b><span>1.2 · novembro de 2026</span>
       <b>PACOTE</b><span>Pasta Financeiro: app (HTML), Database.xlsx, Config.xlsx, este guia e LEIA-ME</span>
       <b>DA GESTÃO</b><span>Planilha DRP (ex.: DRP AIR BR V20260925.xlsx), sempre na versão mais atual</span>
     </div>
@@ -138,8 +138,8 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
   <div class="cards c4">
     <div class="card g050"><span class="t">App HTML</span><p>Um único arquivo, sem instalação. Abra no Chrome ou no Edge para computador.</p></div>
     <div class="card g150"><span class="t">Database.xlsx</span><p>Os dados: contratos (aba <b>2. Propostas</b>) e o billing de cada cliente (abas <b>BL_</b>). Começa vazio.</p></div>
-    <div class="card g300"><span class="t">Config.xlsx</span><p>As regras: impostos, dias úteis e listas dos formulários.</p></div>
-    <div class="card g600"><span class="t">DRP</span><p>Da gestão. Innovation Studios, perfis, custos e ratecards por ano (aba <b>Custo Referência</b>). Só leitura.</p></div>
+    <div class="card g300"><span class="t">Config.xlsx</span><p>As regras: dias úteis, listas dos formulários e impostos (usados só se não houver DRP).</p></div>
+    <div class="card g600"><span class="t">DRP</span><p>Da gestão. Perfis, custos e ratecards (aba <b>Custo Referência</b>) e impostos por ano (aba <b>Parametro</b>). Só leitura.</p></div>
   </div>
   <h3>O que o app faz</h3>
   <table>
@@ -173,7 +173,7 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
   <h3>O que revisar no Config.xlsx</h3>
   <table>
     <tr><th style="width:22%">Aba</th><th style="width:15%">Situação</th><th>O que fazer</th></tr>
-    <tr><td class="k">Impostos</td><td>Confirmar</td><td>Vem com PIS 0,65% · COFINS 3% · INSS 2,7% · ISSQN 2% · OPEX 9,81%. Confirme com o Financeiro.</td></tr>
+    <tr><td class="k">Impostos</td><td>Alternativa</td><td>Com o DRP na pasta, os impostos de cada ano vêm dele. Esta aba (PIS 0,65% · COFINS 3% · INSS 2,7% · ISSQN 2% · OPEX 9,81%) só vale sem DRP e para anos que o DRP não tem.</td></tr>
     <tr><td class="k">Dias Uteis</td><td>Revisar</td><td>Vem com os dias úteis de 2027 (feriados nacionais). Ajuste feriados locais.</td></tr>
     <tr><td class="k">PowerHouse</td><td>Recomendada</td><td>Lista de PowerHouses que aparece no cadastro de contratos.</td></tr>
     <tr><td class="k">BP por Cliente</td><td>Opcional</td><td>Business Partner de cada cliente.</td></tr>
@@ -203,7 +203,7 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
 <section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
   <div class="shead"><span class="lbl">03 / Planilha DRP</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
   <h2>Toda vez que o app abre, ele confere o DRP e mostra a versão em uso</h2>
-  <p class="lead">O DRP é a fonte de Innovation Studios, perfis, custos e ratecards. Confira a versão no aviso e mantenha sempre a mais atual na pasta Financeiro.</p>
+  <p class="lead">O DRP é a fonte de Innovation Studios, perfis, custos, ratecards e impostos por ano. Confira a versão no aviso e mantenha sempre a mais atual na pasta Financeiro.</p>
   <figure><img src="img/drp.png" alt="Aviso da planilha DRP"><figcaption>Aviso ao abrir o app · arquivo, versão, data e conteúdo do DRP (dados fictícios)</figcaption></figure>
   <table>
     <tr><th style="width:34%">Aviso</th><th>O que fazer</th></tr>
@@ -278,14 +278,14 @@ pre { font-family: var(--mono); font-size: 8pt; line-height: 1.6; background: va
   <div class="shead"><span class="lbl">07 / Regras de negócio</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
   <h2>Os cálculos seguem a mesma regra no app e nas fórmulas da planilha</h2>
   <pre>Valor bruto     = horas executadas × R$/h × fator
-Impostos        = valor bruto × (PIS + COFINS + INSS + ISSQN)   → zero se o projeto for isento
-Valor líquido   = valor bruto − impostos
+Valor líquido   = bruto × (1 − por dentro) ÷ (1 + por fora)   → impostos do ano do mês
+Impostos        = valor bruto − valor líquido
 Custo           = horas executadas × custo/h
 Resultado       = valor líquido − custo
 Margem bruta    = resultado ÷ valor líquido</pre>
   <div class="cards c2">
     <div class="card g150"><span class="t">Tributação</span><p>Vem do campo <b>Funding</b> do contrato: Sim = isento. Projeto sem contrato é tributado. Contratos do mesmo projeto com Funding diferente geram o alerta "conflito".</p></div>
-    <div class="card g300"><span class="t">Fonte das regras</span><p>Perfis, custos e ratecards vêm do <b>DRP</b>; impostos, dias úteis e listas, do <b>Config.xlsx</b>. A aba 1. Config do Database é só um espelho técnico.</p></div>
+    <div class="card g300"><span class="t">Fonte das regras</span><p>Perfis, custos, ratecards e impostos por ano vêm do <b>DRP</b>; dias úteis e listas, do <b>Config.xlsx</b>. A aba 1. Config do Database é um espelho técnico.</p></div>
   </div>
   <h3>Faixas de margem bruta</h3>
   <table>
@@ -294,6 +294,32 @@ Margem bruta    = resultado ÷ valor líquido</pre>
     <tr><td class="k">20% a 28,9%</td><td><span class="sw" style="background:#e0a100"></span>Amarela · abaixo da meta</td></tr>
     <tr><td class="k">29% ou mais</td><td><span class="sw" style="background:#1e7a3c"></span>Verde · na meta</td></tr>
   </table>
+</section>
+
+<!-- ============ 7b. IMPOSTOS POR ANO ============ -->
+<section class="page"><div class="ptop"><span>Internal</span><span>Gestão Financeira de Projetos · Guia do time</span></div><div class="pfoot"><span class="pn"></span><span>Internal</span></div>
+  <div class="shead"><span class="lbl">07 / Impostos por ano</span><span class="rule"></span><img src="img/airr-logo-black.svg" alt="AI/R"></div>
+  <h2>Cada mês usa os impostos do seu ano, lidos do DRP, com a reforma tributária a partir de 2027</h2>
+  <p class="lead">O app lê a tabela de impostos da aba <b>Parametro</b> do DRP e aplica a cada alocação os impostos do ano do mês de execução, com a mesma conta que o DRP usa para formar o ratecard.</p>
+  <table>
+    <tr><th style="width:16%">Ano</th><th>Por dentro<br>ISSQN + PIS/COFINS + INSS</th><th>Por fora<br>CBS + IBS</th><th>Desconto efetivo sobre o bruto</th></tr>
+    <tr><td class="k">2026</td><td>8,35%</td><td>0%</td><td><b>8,35%</b></td></tr>
+    <tr><td class="k">2027</td><td>3,80%</td><td>8,50%</td><td><b>11,34%</b></td></tr>
+    <tr><td class="k">2028</td><td>2,00%</td><td>8,50%</td><td><b>9,68%</b></td></tr>
+  </table>
+  <p class="small" style="font-size:7.6pt;color:var(--gray-500);margin-top:-2mm">Valores do DRP V20260925. As alíquotas vigentes aparecem sempre no aviso do DRP, ao abrir o app.</p>
+  <div class="note"><span class="t">Como o desconto de 2027 é calculado</span>A partir de 2027, o ratecard do DRP já embute o CBS/IBS (× 1,085). O valor bruto (horas × R$/h) contém esse imposto, que vai para o governo. Por isso: <b>líquido = bruto × (1 − por dentro) ÷ (1 + por fora)</b>. Em 2027: bruto × 0,962 ÷ 1,085 = 88,66% do bruto.</div>
+  <div class="stats">
+    <div class="stat"><div class="n">40%</div><div class="c">margem com o ratecard de 2027 do DRP<br>(a meta que ele embute)</div></div>
+    <div class="stat"><div class="n">≈ 33%</div><div class="c">margem de um preço de 2026<br>faturado em 2027, sem reajuste</div></div>
+  </div>
+  <div class="cards c2">
+    <div class="card g150"><span class="t">Contratos antigos em 2027</span><p>Se o R$/h não foi reajustado para o ratecard de 2027, o CBS/IBS sai da margem. O app mostra a queda sozinho, mês a mês.</p></div>
+    <div class="card g300"><span class="t">Projetos isentos</span><p>Projetos com Funding = Sim continuam com 0% em todos os impostos, inclusive CBS/IBS.</p></div>
+    <div class="card g450"><span class="t">Margem projetada</span><p>O saldo do contrato, faturado no fim, usa os impostos do ano de término do contrato.</p></div>
+    <div class="card g600"><span class="t">Sem DRP na pasta</span><p>O app usa a tabela de impostos por ano já gravada no Database; sem ela, a alíquota única da aba Impostos do Config.</p></div>
+  </div>
+  <div class="note dark"><span class="t">No Excel</span>O app grava a tabela <b>Ano (impostos)</b> na aba 1. Config do Database. As fórmulas de PIS, COFINS, INSS, ISSQN e Valor Liquido das abas BL_ buscam a alíquota pelo ano do Mês de Execução; o Excel recalcula sozinho.</div>
 </section>
 
 <!-- ============ 8. EQUIPE ============ -->
@@ -334,6 +360,8 @@ Margem bruta    = resultado ÷ valor líquido</pre>
     <tr><td>Lista de iStudio vazia</td><td>O DRP não está na pasta ou não pôde ser lido (veja o aviso ao abrir). Salve a versão atual e reabra o app.</td></tr>
     <tr><td>"Database ou Config está bloqueado"</td><td>Arquivo aberto no Excel (seu ou de um colega). Feche e tente de novo.</td></tr>
     <tr><td>"Fulano está editando", mas ele já saiu</td><td>A trava expira em 3 minutos. Clique em <b>Atualizar</b> e depois em <b>Editar</b>.</td></tr>
+    <tr><td>Margem de 2027 abaixo de 40% com ratecard do DRP</td><td>O R$/h da alocação não é o ratecard de 2027 (ex.: preço de 2026, sem CBS/IBS). Confira o valor no formulário de alocação.</td></tr>
+    <tr><td>Aviso do DRP: impostos "não lidos"</td><td>A aba Parametro do DRP não tem a tabela ANO | IMPOSTOS. O app usa a aba Impostos do Config; avise a gestão.</td></tr>
     <tr><td>Ratecard não é sugerido</td><td>A combinação iStudio + papel + senioridade não existe no DRP. Informe à mão e avise a gestão.</td></tr>
     <tr><td>Preciso desfazer uma gravação</td><td>Com o app e o Excel fechados, copie o backup de <code>_backups_safeharbor/</code> por cima do arquivo. Depois de 3 dias, use o histórico de versões do SharePoint.</td></tr>
   </table>
@@ -346,7 +374,7 @@ Margem bruta    = resultado ÷ valor líquido</pre>
   <h3>Database.xlsx</h3>
   <table>
     <tr><th style="width:24%">Aba</th><th>Conteúdo</th></tr>
-    <tr><td class="k">1. Config</td><td>Espelho técnico: listas, alíquotas (U3:Y3), dias úteis (T:V), clientes x tabelas (AA:AE) e chaves de tributação (AF:AG). As fórmulas das abas BL_ leem daqui.</td></tr>
+    <tr><td class="k">1. Config</td><td>Espelho técnico: listas, alíquotas únicas (U3:Y3), dias úteis (T:V), clientes x tabelas (AA:AE), chaves de tributação (AF:AG) e a tabela <b>Ano (impostos)</b>, gravada pelo app à direita. As fórmulas das abas BL_ leem daqui.</td></tr>
     <tr><td class="k">2. Propostas</td><td>Tabela <code>tbl_Propostas</code>: um contrato por linha, com valor assinado, valor usado, saldo (Delta) e Funding.</td></tr>
     <tr><td class="k">BL_Template</td><td>Modelo das abas de billing. O app cria <code>BL_&lt;cliente&gt;</code> a partir dela, com a tabela <code>tbl_&lt;cliente&gt;</code>.</td></tr>
   </table>
@@ -354,13 +382,14 @@ Margem bruta    = resultado ÷ valor líquido</pre>
   <table>
     <tr><th style="width:24%">Aba</th><th>Conteúdo</th></tr>
     <tr><td class="k">Leia-me</td><td>Resumo do que preencher em cada aba.</td></tr>
-    <tr><td class="k">Impostos · Dias Uteis</td><td>Alíquotas e OPEX; dias e horas úteis por mês.</td></tr><tr><td class="k">Perfis</td><td>Alternativa usada só quando não há DRP na pasta.</td></tr>
+    <tr><td class="k">Impostos · Dias Uteis</td><td>Alíquotas únicas e OPEX (alternativa ao DRP); dias e horas úteis por mês.</td></tr><tr><td class="k">Perfis</td><td>Alternativa usada só quando não há DRP na pasta.</td></tr>
     <tr><td class="k">Revenue State · Status da Proposta · PowerHouse</td><td>Listas dos formulários.</td></tr>
     <tr><td class="k">Projetos · Clientes x Tabelas · BP por Cliente</td><td>Mantidas pelo app a cada gravação (BP por Cliente pode ser preenchida à mão).</td></tr>
   </table>
-  <h3>DRP · aba Custo Referência (somente leitura)</h3>
+  <h3>DRP (somente leitura)</h3>
   <table>
-    <tr><th style="width:34%">Coluna</th><th>Uso no app</th></tr>
+    <tr><th style="width:34%">Aba · coluna</th><th>Uso no app</th></tr>
+    <tr><td class="k">Parametro · ANO | IMPOSTOS</td><td>Impostos de cada ano: ISS/ISSQN, PIS/COFINS e INSS por dentro; CBS e IBS por fora.</td></tr>
     <tr><td class="k">INNOVATION STUDIO · Perfil · Senioridade</td><td>Listas dos formulários de contrato e de alocação.</td></tr>
     <tr><td class="k">&lt;ano&gt; PC para Ratecard (com overhead)</td><td>Custo/h sugerido.</td></tr>
     <tr><td class="k">Custo Total &lt;ano&gt; (Sem Overhead)</td><td>Custo/h alternativo (botão "Usar custo sem overhead").</td></tr>
