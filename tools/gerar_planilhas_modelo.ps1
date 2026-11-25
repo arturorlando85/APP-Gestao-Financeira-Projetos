@@ -190,7 +190,7 @@ $i = 4; foreach ($row in $LEIA) { $st = if ($i -eq 4) { $S_HEAD } else { $S_BOX 
 $leiaSheet = SheetXml $r "A1:C$($i - 1)" (ColsXml @(22, 90, 30))
 
 $taxData = @(, @($TAX.Values | ForEach-Object { [double]$_ }))
-$diasData = for ($mo = 1; $mo -le 12; $mo++) { , @($MESES[$mo - 1], [int]$DIAS[$mo], [int]$DIAS[$mo] * 8) }
+$diasData = for ($mo = 1; $mo -le 12; $mo++) { , @($MESES[$mo - 1], [int]$DIAS[$mo], ([int]$DIAS[$mo] * 8)) } # parênteses: sem eles a vírgula vem antes do * e a lista inteira é repetida 8 vezes
 
 Write-Xlsx (Join-Path $Saida 'Config.xlsx') @(
   @{ name = 'Leia-me'; xml = $leiaSheet },
