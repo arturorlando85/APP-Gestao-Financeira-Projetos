@@ -227,6 +227,14 @@
       const i = typeof t === 'string' ? MESES.indexOf(t.trim().toLowerCase()) : -1;
       if (i >= 0 && typeof d === 'number' && d >= 1 && typeof h === 'number') workdays[i + 1] = { dias: d, horas: h };
     }
+    // tabela de impostos por ano que o app grava no espelho (cabeçalho "Ano (impostos)"; colunas PIS, COFINS, INSS, ISSQN, CBS+IBS)
+    const taxYears = {}; let taxYearsCol = null; const r1 = cfg.rows.get(1);
+    if (r1) for (const [c, x] of r1.cells) if (typeof x.v === 'string' && /^ano \(impostos\)/i.test(x.v.trim())) taxYearsCol = c;
+    if (taxYearsCol) for (let r = 2; r <= maxRow; r++) {
+      const y = cellVal(cfg.rows, r, taxYearsCol); if (typeof y !== 'number' || y < 2000) continue;
+      const g = i => { const v = cellVal(cfg.rows, r, taxYearsCol + i); return typeof v === 'number' ? v : 0; };
+      taxYears[y] = { PIS: g(1), COFINS: g(2), INSS: g(3), ISSQN: g(4), fora: g(5), fonte: 'Database' };
+    }
     const cfgClients = [];
     for (let r = 2; r <= maxRow; r++) {
       const n = cellVal(cfg.rows, r, 27); if (!n || typeof n !== 'string') continue;
@@ -339,7 +347,7 @@
       }
     }
     return {
-      people, accName,
+      people, accName, taxYears, taxYearsCol,
       zip, sheets, tables, sst, parsedCache: parsed, cfgName, propName, lists, taxes, workdays, cfgClients, orphanKeys,
       clients, projects, proposals, allocations, blMeta, propTable: pt.name, fileName: null, buf: keepBuf, hasFunding,
     };
@@ -361,12 +369,28 @@
   }
   // ---------- cálculos ----------
   function taxRate(m) { const t = m.taxes; return (t.PIS || 0) + (t.COFINS || 0) + (t.INSS || 0) + (t.ISSQN || 0); }
+  // Alíquotas do ano do mês de execução. m.taxYears (do DRP ou da tabela por ano do Database) traz, por ano,
+  // PIS, COFINS, INSS e ISSQN ("por dentro") e fora = CBS + IBS ("por fora"). Sem o ano: alíquota única do Config.
+  function taxesFor(m, month) {
+    const y = +String(month || '').slice(0, 4) || null; const t = y && m.taxYears && m.taxYears[y];
+    if (t) return { PIS: t.PIS || 0, COFINS: t.COFINS || 0, INSS: t.INSS || 0, ISSQN: t.ISSQN || 0, fora: t.fora || 0, ano: y, porAno: true };
+    const b = m.taxes || {}; return { PIS: b.PIS || 0, COFINS: b.COFINS || 0, INSS: b.INSS || 0, ISSQN: b.ISSQN || 0, fora: 0, ano: y, porAno: false };
+  }
+  // Fração do valor bruto que fica para a empresa, como no ratecard do DRP: (1 − por dentro) ÷ (1 + por fora).
+  function taxFactor(m, month, projTrib) {
+    if (projTrib === 'Isento') return 1;
+    const t = taxesFor(m, month); return (1 - (t.PIS + t.COFINS + t.INSS + t.ISSQN)) / (1 + t.fora);
+  }
   function calcAlloc(m, a, projTrib) {
     const f = a.fields; const he = +f['Horas Executadas'] || 0, rate = +f['R$/H'] || 0, custo = +f['Custo Profissional'] || 0;
     const bruto = a.brutoFixed != null ? a.brutoFixed : he * rate * (a.mult || 1);
-    const imp = projTrib === 'Isento' ? 0 : bruto * taxRate(m);
+    const t = taxesFor(m, f['Mês de Execução']); const isen = projTrib === 'Isento';
+    // o bruto (horas × ratecard) já contém CBS/IBS quando há imposto "por fora"; os "por dentro" incidem sobre o preço sem eles
+    const base = isen ? bruto : bruto / (1 + t.fora);
+    const tx = isen ? { PIS: 0, COFINS: 0, INSS: 0, ISSQN: 0, fora: 0 } : { PIS: base * t.PIS, COFINS: base * t.COFINS, INSS: base * t.INSS, ISSQN: base * t.ISSQN, fora: bruto - base };
+    const imp = tx.PIS + tx.COFINS + tx.INSS + tx.ISSQN + tx.fora;
     const liq = bruto - imp; const custoTot = custo * he; const res = liq - custoTot;
-    return { bruto, imp, liq, custoTot, res, mb: liq ? res / liq : 0 };
+    return { bruto, imp, liq, custoTot, res, mb: liq ? res / liq : 0, tx, taxAno: t.ano, taxPorAno: t.porAno };
   }
 
   // ---------- exportação ----------
@@ -382,6 +406,14 @@
     const projTrib = (clientName, name) => { const p = m.projects.find(p => norm(p.client) === norm(clientName) && norm(p.name) === norm(name)); return p ? p.trib : 'Tributado'; };
     const taxRow = m.taxes.row || 9;
     const cfgQ = `'${m.cfgName.replace(/'/g, "''")}'`;
+    // tabela de impostos por ano no espelho "1. Config": usa a coluna já existente ou a primeira livre à direita do que está em uso
+    const tyYears = Object.keys(m.taxYears || {}).map(Number).filter(y => y > 2000).sort((a, b) => a - b);
+    let tyCol = null;
+    if (tyYears.length) {
+      tyCol = m.taxYearsCol;
+      if (!tyCol) { const cs = await fresh(m.cfgName); let mx = 33; for (const row of cs.rows.values()) for (const c of row.cells.keys()) if (c > mx) mx = c; tyCol = mx + 2; }
+      m.taxYearsCol = tyCol;
+    }
 
     // 1) novas abas BL para clientes novos
     let wbXml = await txt('xl/workbook.xml'); let relsXml = await txt('xl/_rels/workbook.xml.rels');
@@ -469,22 +501,31 @@
       function canonical(h, ref, s, oc, dr, rec, k) {
         const R = ref.replace(/^[A-Z]+/, '');
         const sa = s;
-        const isen = k && k.imp === 0 && k.bruto !== 0;
-        const tv = name => k ? (isen ? 0 : (m.taxes[name] || 0) * k.bruto) : undefined;
         const vals = k ? { 'Valor Bruto': k.bruto, 'Valor Liquido': k.liq, 'Resultado Bruto': k.res, 'MB Profissional': k.mb,
-          PIS: tv('PIS'), COFINS: tv('COFINS'), INSS: tv('INSS'), ISSQN: tv('ISSQN'), 'Custo Total Profissional': k.custoTot } : {};
+          PIS: k.tx.PIS, COFINS: k.tx.COFINS, INSS: k.tx.INSS, ISSQN: k.tx.ISSQN, 'Custo Total Profissional': k.custoTot } : {};
         const F = f => cellXml(ref, sa, null, { f, v: vals[h] });
-        const T = (col) => `IF(IFERROR(MATCH(${L('Cliente')}${R}&"|"&${L('Projeto')}${R},${cfgQ}!$AF$2:$AF$400,0),0)>0,IF(INDEX(${cfgQ}!$AG$2:$AG$400,MATCH(${L('Cliente')}${R}&"|"&${L('Projeto')}${R},${cfgQ}!$AF$2:$AF$400,0))="Isento",0,${cfgQ}!${col}$${taxRow}*${L('Valor Bruto')}${R}),${cfgQ}!${col}$${taxRow}*${L('Valor Bruto')}${R})`;
+        const key = `${L('Cliente')}${R}&"|"&${L('Projeto')}${R}`;
+        const isenWrap = (x0, x) => `IF(IFERROR(MATCH(${key},${cfgQ}!$AF$2:$AF$400,0),0)>0,IF(INDEX(${cfgQ}!$AG$2:$AG$400,MATCH(${key},${cfgQ}!$AF$2:$AF$400,0))="Isento",${x0},${x}),${x})`;
+        const T = (col) => isenWrap('0', `${cfgQ}!${col}$${taxRow}*${L('Valor Bruto')}${R}`); // alíquota única (sem tabela por ano)
+        // com tabela por ano: alíquota do ano do Mês de Execução; sem o ano na tabela, cai na alíquota única
+        const TY = tyCol ? (() => {
+          const rg = i => `${cfgQ}!$${numToCol(tyCol + i)}$2:$${numToCol(tyCol + i)}$80`;
+          const mt = `MATCH(YEAR(${L('Mês de Execução')}${R}),${rg(0)},0)`;
+          const base = `${L('Valor Bruto')}${R}/(1+IFERROR(INDEX(${rg(5)},${mt}),0))`; // preço sem CBS/IBS ("por fora")
+          return { tax: (i, col) => isenWrap('0', `IFERROR(INDEX(${rg(i)},${mt}),${cfgQ}!${col}$${taxRow})*${base}`),
+            liq: isenWrap(`${L('Valor Bruto')}${R}`, `${base}-(${L('PIS')}${R}+${L('COFINS')}${R}+${L('INSS')}${R}+${L('ISSQN')}${R})`) };
+        })() : null;
         switch (h) {
           case 'Valor Bruto': {
             if (rec && rec.brutoFixed != null) return cellXml(ref, sa, rec.brutoFixed);
             const mult = rec ? rec.mult : 1;
             return F(`${L('Horas Executadas')}${R}*${L('R$/H')}${R}` + (mult && mult !== 1 ? `*${mult}` : ''));
           }
-          case 'Valor Liquido': return F(`${L('Valor Bruto')}${R}-(${L('PIS')}${R}+${L('COFINS')}${R}+${L('INSS')}${R}+${L('ISSQN')}${R})`);
+          case 'Valor Liquido': return F(TY ? TY.liq : `${L('Valor Bruto')}${R}-(${L('PIS')}${R}+${L('COFINS')}${R}+${L('INSS')}${R}+${L('ISSQN')}${R})`);
           case 'Resultado Bruto': return F(`${L('Valor Liquido')}${R}-(${L('Custo Profissional')}${R}*${L('Horas Executadas')}${R})`);
           case 'MB Profissional': return F(`IF(${L('Valor Liquido')}${R}=0,0,${L('Resultado Bruto')}${R}/${L('Valor Liquido')}${R})`);
-          case 'PIS': return F(T('U')); case 'COFINS': return F(T('V')); case 'INSS': return F(T('W')); case 'ISSQN': return F(T('X'));
+          case 'PIS': return F(TY ? TY.tax(1, 'U') : T('U')); case 'COFINS': return F(TY ? TY.tax(2, 'V') : T('V'));
+          case 'INSS': return F(TY ? TY.tax(3, 'W') : T('W')); case 'ISSQN': return F(TY ? TY.tax(4, 'X') : T('X'));
           case 'Custo Total Profissional': return F(`${meta.table}[[#This Row],[Custo Profissional]]*${meta.table}[[#This Row],[Horas Executadas]]`);
           default:
             if (!BL_FIELDS.includes(h) && rec && oc && oc.f) return keepCellXml(oc, ref, dr);
@@ -615,6 +656,12 @@
       }
       // espelha no Database as alíquotas vindas do Config.xlsx (as fórmulas BL leem daqui)
       if (m.config && m.config.taxesFromConfig && m.taxes.row) { const tr = m.taxes.row; [['PIS', 21], ['COFINS', 22], ['INSS', 23], ['ISSQN', 24], ['OPEX', 25]].forEach(([k, c]) => { if (m.taxes[k] != null) setCell(tr, c, m.taxes[k]); }); }
+      // tabela de impostos por ano (do DRP): as fórmulas de PIS, COFINS, INSS, ISSQN e Valor Liquido das abas BL leem daqui
+      if (tyCol) {
+        ['Ano (impostos)', 'PIS', 'COFINS', 'INSS', 'ISSQN', 'CBS+IBS (por fora)'].forEach((t, i) => setCell(1, tyCol + i, t));
+        tyYears.forEach((y, i) => { const t = m.taxYears[y]; [y, t.PIS || 0, t.COFINS || 0, t.INSS || 0, t.ISSQN || 0, t.fora || 0].forEach((v, j) => setCell(i + 2, tyCol + j, v)); });
+        for (const [r, row] of rows) if (r >= tyYears.length + 2) for (let j = 0; j <= 5; j++) row.cells.delete(tyCol + j); // anos que saíram
+      }
       // clientes novos
       let lastAA = Math.max(1, ...[...rows.entries()].filter(([, x]) => x.cells.get(27) && x.cells.get(27).v).map(([r]) => r));
       let lastO = Math.max(1, ...[...rows.entries()].filter(([, x]) => x.cells.get(15) && x.cells.get(15).v).map(([r]) => r));
@@ -623,7 +670,7 @@
         if (!c.inList) { lastO++; setCell(lastO, 15, c.name); }
       }
       let head = sh.head; const maxRow = Math.max(...rows.keys());
-      head = head.replace(/<dimension ref="[^"]*"\/>/, `<dimension ref="A1:AG${maxRow}"/>`);
+      head = head.replace(/<dimension ref="[^"]*"\/>/, `<dimension ref="A1:${numToCol(Math.max(33, tyCol ? tyCol + 5 : 33, ...[...rows.values()].flatMap(x => [...x.cells.keys()])))}${maxRow}"/>`);
       zip.file(sheets[m.cfgName].path, head + '<sheetData>' + serializeRows(rows) + '</sheetData>' + sh.tail);
     }
 
@@ -791,13 +838,15 @@
     const wb = await txt('xl/workbook.xml'); const rels = await txt('xl/_rels/workbook.xml.rels');
     if (!wb || !rels) throw new Error('o arquivo não é uma planilha Excel válida');
     const relMap = {}; rels.replace(/<Relationship\s([^>]*?)\/>/g, (x, a) => { relMap[attr(a, 'Id')] = attr(a, 'Target'); });
-    let sheetName = null, sheetPath = null;
+    let sheetName = null, sheetPath = null, parPath = null;
     wb.replace(/<sheet\s([^>]*?)\/>/g, (x, a) => {
-      const name = decodeXml(attr(a, 'name'));
-      if (!sheetPath && /^custo referencia$/.test(plainTxt(name))) { let t = relMap[attr(a, 'r:id')]; sheetPath = t.startsWith('/') ? t.slice(1) : 'xl/' + t; sheetName = name; }
+      const name = decodeXml(attr(a, 'name')); const pathOf = () => { const t = relMap[attr(a, 'r:id')]; return t.startsWith('/') ? t.slice(1) : 'xl/' + t; };
+      if (!sheetPath && /^custo referencia$/.test(plainTxt(name))) { sheetPath = pathOf(); sheetName = name; }
+      if (!parPath && /^parametros?$/.test(plainTxt(name))) parPath = pathOf();
     });
     if (!sheetPath) throw new Error('não encontrei a aba "Custo Referência"');
-    const sh = parseSheet(await txt(sheetPath), parseSST(await txt('xl/sharedStrings.xml')));
+    const sst = parseSST(await txt('xl/sharedStrings.xml'));
+    const sh = parseSheet(await txt(sheetPath), sst);
     // linha de cabeçalho: a primeira (até a 15ª) que tem "INNOVATION STUDIO"
     let hr = null; const head = {};
     for (let r = 1; r <= 15 && hr == null; r++) {
@@ -835,9 +884,28 @@
     }
     if (!perfis.length) throw new Error('a aba "Custo Referência" não tem perfis preenchidos');
     const uniq = a => [...new Set(a.filter(Boolean))].sort((x, y) => x.localeCompare(y));
-    return { sheet: sheetName, perfis, anos, istudios: uniq(perfis.map(p => p.istudio)), contratos: uniq(perfis.map(p => p.contrato)) };
+    // impostos por ano (aba Parametro): tabela ANO | IMPOSTOS | alíquota, com ISS/ISSQN, PIS/COFINS e INSS ("por dentro")
+    // e CBS e IBS ("por fora", somados ao preço). PIS/COFINS vem junto; a divisão entre os dois fica com quem usa.
+    let impostos = null, impostosErro = null;
+    try {
+      if (!parPath) throw new Error('aba Parametro não encontrada');
+      const ps = parseSheet(await txt(parPath), sst); let hr = null, hc = null;
+      for (let r = 1; r <= 10 && hr == null; r++) { const row = ps.rows.get(r); if (!row) continue; for (const [c, x] of row.cells) if (typeof x.v === 'string' && plainTxt(x.v) === 'impostos') { hr = r; hc = c; break; } }
+      if (hr == null) throw new Error('tabela IMPOSTOS não encontrada na aba Parametro');
+      const out = {}; const maxPR = Math.max(...ps.rows.keys());
+      for (let r = hr + 1; r <= maxPR; r++) {
+        const y = cellVal(ps.rows, r, hc - 1), nome = cellVal(ps.rows, r, hc), v = cellVal(ps.rows, r, hc + 1);
+        if (typeof y !== 'number' || y < 2000 || typeof nome !== 'string') continue;
+        const n = plainTxt(nome); const t = out[y] = out[y] || { ISSQN: 0, PISCOFINS: 0, INSS: 0, CBS: 0, IBS: 0 }; const val = typeof v === 'number' && isFinite(v) ? v : 0;
+        if (/^iss/.test(n)) t.ISSQN += val; else if (/pis|cofins/.test(n)) t.PISCOFINS += val; else if (/^inss/.test(n)) t.INSS += val; else if (/^cbs/.test(n)) t.CBS += val; else if (/^ibs/.test(n)) t.IBS += val;
+      }
+      if (!Object.keys(out).length) throw new Error('tabela IMPOSTOS da aba Parametro está vazia');
+      for (const y in out) { const t = out[y]; t.dentro = t.ISSQN + t.PISCOFINS + t.INSS; t.fora = t.CBS + t.IBS; }
+      impostos = out;
+    } catch (e) { impostosErro = e.message || String(e); }
+    return { sheet: sheetName, perfis, anos, istudios: uniq(perfis.map(p => p.istudio)), contratos: uniq(perfis.map(p => p.contrato)), impostos, impostosErro };
   }
 
-  const api = { load, loadConfig, loadDRP, exportConfig, exportXlsx, calcAlloc, projectOf, refreshTrib, taxRate, shiftFormula, norm, serialToISO, isoToSerial, BL_INPUT, PROP_FIELDS, nid };
+  const api = { load, loadConfig, loadDRP, exportConfig, exportXlsx, calcAlloc, projectOf, refreshTrib, taxRate, taxesFor, taxFactor, shiftFormula, norm, serialToISO, isoToSerial, BL_INPUT, PROP_FIELDS, nid };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.SHCore = api;
 })(typeof window !== 'undefined' ? window : globalThis);
